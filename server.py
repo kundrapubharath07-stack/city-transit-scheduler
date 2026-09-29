@@ -737,6 +737,14 @@ def wsgi_app(environ, start_response):
     method = environ.get("REQUEST_METHOD", "GET").upper()
     path = environ.get("PATH_INFO", "/")
 
+    # Normalize path if routed via /api/index.py or root API calls
+    if path == "/api" or path == "/api/":
+        path = "/api/overview"
+    elif path.startswith("/api/index.py/"):
+        path = path[len("/api/index.py"):]
+    elif path == "/api/index.py":
+        path = "/api/overview"
+
     # CORS preflight OPTIONS
     if method == "OPTIONS":
         start_response("204 No Content", [
@@ -774,6 +782,11 @@ def wsgi_app(environ, start_response):
         file_path = "script.js"
 
     full_path = os.path.join(DIRECTORY, file_path)
+    if not (os.path.exists(full_path) and os.path.isfile(full_path)):
+        pub_path = os.path.join(DIRECTORY, "public", file_path)
+        if os.path.exists(pub_path) and os.path.isfile(pub_path):
+            full_path = pub_path
+
     if os.path.exists(full_path) and os.path.isfile(full_path):
         mime = "text/plain"
         if file_path.endswith(".html"): mime = "text/html"
@@ -781,8 +794,13 @@ def wsgi_app(environ, start_response):
         elif file_path.endswith(".css"): mime = "text/css"
         elif file_path.endswith(".json"): mime = "application/json"
         elif file_path.endswith(".png"): mime = "image/png"
+        elif file_path.endswith(".jpg") or file_path.endswith(".jpeg"): mime = "image/jpeg"
+        elif file_path.endswith(".webp"): mime = "image/webp"
         elif file_path.endswith(".ico"): mime = "image/x-icon"
         elif file_path.endswith(".svg"): mime = "image/svg+xml"
+        elif file_path.endswith(".woff2"): mime = "font/woff2"
+        elif file_path.endswith(".woff"): mime = "font/woff"
+        elif file_path.endswith(".ttf"): mime = "font/ttf"
 
         with open(full_path, "rb") as f:
             content = f.read()
