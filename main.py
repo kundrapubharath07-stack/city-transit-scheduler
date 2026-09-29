@@ -14,8 +14,8 @@ if sys.platform.startswith("win"):
     except Exception:
         pass
 
-# Import the server components
-from server import TransitRequestHandler, db_manager
+# Import the server components and WSGI app for Vercel / serverless deployments
+from server import TransitRequestHandler, db_manager, wsgi_app, app, application
 
 # Use PORT from environment variable (required by cloud platforms like Render, Railway, etc.)
 # Falls back to 8000 for local development

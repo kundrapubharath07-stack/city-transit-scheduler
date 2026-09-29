@@ -681,6 +681,126 @@ class TransitRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"error": str(e)}, status=500)
 
 
+class WSGIHandlerAdapter:
+    def __init__(self, environ, start_response):
+        self.environ = environ
+        self.start_response = start_response
+        self.path = environ.get("PATH_INFO", "/")
+        if environ.get("QUERY_STRING"):
+            self.path += "?" + environ["QUERY_STRING"]
+        self.body_json = {}
+        try:
+            length = int(environ.get("CONTENT_LENGTH") or 0)
+            if length > 0:
+                raw = environ["wsgi.input"].read(length)
+                self.body_json = json.loads(raw.decode("utf-8"))
+        except Exception:
+            self.body_json = {}
+        self.response_body = b""
+
+    def get_auth_user(self):
+        auth = self.environ.get("HTTP_AUTHORIZATION", "")
+        if auth.startswith("Bearer "):
+            return db_manager.verify_token(auth[7:].strip())
+        return None
+
+    def read_json_body(self):
+        return self.body_json
+
+    def send_json(self, data, status=200):
+        body = json.dumps(data).encode("utf-8")
+        status_map = {
+            200: "200 OK", 201: "201 Created", 204: "204 No Content",
+            400: "400 Bad Request", 401: "401 Unauthorized", 403: "403 Forbidden",
+            404: "404 Not Found", 409: "409 Conflict", 500: "500 Internal Server Error"
+        }
+        self.start_response(status_map.get(status, f"{status} Status"), [
+            ("Content-Type", "application/json; charset=utf-8"),
+            ("Content-Length", str(len(body))),
+            ("Access-Control-Allow-Origin", "*"),
+            ("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"),
+            ("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        ])
+        self.response_body = body
+
+    def send_csv(self, filename: str, content: str):
+        body = content.encode("utf-8")
+        self.start_response("200 OK", [
+            ("Content-Type", "text/csv; charset=utf-8"),
+            ("Content-Disposition", f'attachment; filename="{filename}"'),
+            ("Content-Length", str(len(body))),
+            ("Access-Control-Allow-Origin", "*")
+        ])
+        self.response_body = body
+
+def wsgi_app(environ, start_response):
+    method = environ.get("REQUEST_METHOD", "GET").upper()
+    path = environ.get("PATH_INFO", "/")
+
+    # CORS preflight OPTIONS
+    if method == "OPTIONS":
+        start_response("204 No Content", [
+            ("Access-Control-Allow-Origin", "*"),
+            ("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"),
+            ("Access-Control-Allow-Headers", "Content-Type, Authorization"),
+            ("Content-Length", "0")
+        ])
+        return [b""]
+
+    adapter = WSGIHandlerAdapter(environ, start_response)
+
+    if path.startswith("/api/"):
+        query = urllib.parse.parse_qs(environ.get("QUERY_STRING", ""))
+        try:
+            if method == "GET":
+                TransitRequestHandler.handle_api_get(adapter, path, query)
+            elif method == "POST":
+                TransitRequestHandler.handle_api_post(adapter, path, adapter.body_json)
+            elif method == "PUT":
+                TransitRequestHandler.do_PUT(adapter)
+            elif method == "DELETE":
+                TransitRequestHandler.do_DELETE(adapter)
+            else:
+                adapter.send_json({"error": "Method Not Allowed"}, status=405)
+        except Exception as e:
+            adapter.send_json({"error": str(e)}, status=500)
+        return [adapter.response_body]
+
+    # Serve static assets
+    file_path = path.lstrip("/")
+    if not file_path or file_path == "/":
+        file_path = "index.html"
+    elif file_path == "app.js":
+        file_path = "script.js"
+
+    full_path = os.path.join(DIRECTORY, file_path)
+    if os.path.exists(full_path) and os.path.isfile(full_path):
+        mime = "text/plain"
+        if file_path.endswith(".html"): mime = "text/html"
+        elif file_path.endswith(".js"): mime = "application/javascript"
+        elif file_path.endswith(".css"): mime = "text/css"
+        elif file_path.endswith(".json"): mime = "application/json"
+        elif file_path.endswith(".png"): mime = "image/png"
+        elif file_path.endswith(".ico"): mime = "image/x-icon"
+        elif file_path.endswith(".svg"): mime = "image/svg+xml"
+
+        with open(full_path, "rb") as f:
+            content = f.read()
+        start_response("200 OK", [
+            ("Content-Type", mime),
+            ("Content-Length", str(len(content))),
+            ("Access-Control-Allow-Origin", "*")
+        ])
+        return [content]
+
+    start_response("404 Not Found", [("Content-Type", "text/plain")])
+    return [b"Not Found"]
+
+# Vercel entrypoint exports
+app = wsgi_app
+application = wsgi_app
+
+
 if __name__ == "__main__":
     if sys.platform.startswith("win"):
         try:
