@@ -14,7 +14,7 @@ import csv
 import io
 from db import DatabaseManager
 
-PORT = 8000
+PORT = int(os.environ.get("PORT", 8000))
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 db_manager = DatabaseManager()
 
