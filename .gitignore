@@ -19,6 +19,9 @@ env/
 *.bak
 apply_*.py
 upgrade_*.py
+inspect_*.py
+update_*.py
+
 
 # Node
 node_modules/

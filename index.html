@@ -6,6 +6,8 @@
     <title>APSRTC Kakinada City Transit & Route Optimizer</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for Admin Graphs Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
@@ -69,9 +71,6 @@
                 <button onclick="switchView('public'); switchPublicSearchTab('stop'); scrollToSection('passenger-search-center');" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition">
                     <i class="fa-solid fa-clock text-slate-400 mr-1"></i> Timings
                 </button>
-                <button onclick="switchView('public'); scrollToSection('how-project-was-made-section');" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition bg-rose-500/10 text-rose-300 border border-rose-500/20">
-                    <i class="fa-solid fa-graduation-cap text-rose-400 mr-1"></i> How Project Was Made
-                </button>
                 <button onclick="switchView('public'); scrollToSection('public-remarks-section');" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition bg-amber-500/10 text-amber-300 border border-amber-500/20">
                     <i class="fa-solid fa-comment-dots text-amber-400 mr-1"></i> Remarks
                 </button>
@@ -94,16 +93,16 @@
 
                 <!-- Admin Action Button (Switches between Login and Dashboard) -->
                 <div id="nav-auth-container">
-                    <button onclick="openLoginModal()" id="nav-admin-login-btn" class="px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-slate-800 text-slate-200 border border-slate-700 transition hover:bg-slate-700 flex items-center space-x-1.5">
+                    <button onclick="openLoginModal()" id="nav-admin-login-btn" class="px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl bg-slate-800 text-slate-100 border border-slate-700 transition hover:bg-slate-700 flex items-center space-x-1.5 shadow-sm">
                         <i class="fa-solid fa-lock text-rose-400"></i>
-                        <span>Admin</span>
+                        <span>Admin Login</span>
                     </button>
                     <div id="nav-admin-logged-group" class="hidden flex items-center space-x-2">
-                        <button onclick="switchView('admin')" id="nav-admin-dash-btn" class="px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-slate-800 text-rose-300 border border-slate-700 hover:bg-slate-700 flex items-center space-x-1.5">
+                        <button onclick="switchView('admin')" id="nav-admin-dash-btn" class="px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl bg-rose-600 text-white transition shadow flex items-center space-x-1.5">
                             <i class="fa-solid fa-gauge-high"></i>
-                            <span class="hidden md:inline">Dashboard</span>
+                            <span>Admin Dashboard</span>
                         </button>
-                        <button onclick="handleLogout()" class="px-3 py-2 text-xs font-semibold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition">
+                        <button onclick="handleLogout()" title="Sign Out" class="px-3 py-2 text-xs font-semibold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition">
                             <i class="fa-solid fa-power-off"></i>
                         </button>
                     </div>
@@ -408,9 +407,7 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        
             <!-- ============================================================== -->
             <!-- ================= PUBLIC SECTION 2: ROUTES DIRECTORY ========= -->
             <!-- ============================================================== -->
@@ -575,319 +572,9 @@
             </div>
 
             <!-- ============================================================== -->
-            <!-- ====== PUBLIC SECTION 4: HOW THIS PROJECT WAS MADE =========== -->
-            <!-- ============================================================== -->
-            <div id="how-project-was-made-section" class="bg-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl border border-slate-800 space-y-10">
-                <!-- Header -->
-                <div class="space-y-3 max-w-4xl">
-                    <div class="flex items-center gap-2">
-                        <span class="bg-rose-500/20 text-rose-300 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/40">
-                            Academic Presentation & Project Defense
-                        </span>
-                        <span class="bg-indigo-500/20 text-indigo-300 text-xs font-semibold px-3 py-1 rounded-full border border-indigo-500/40">
-                            Engineering Curriculum Synthesis
-                        </span>
                     </div>
-                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight">
-                        How This Project Was Made <span class="text-rose-400">— Core Concepts & System Architecture</span>
-                    </h2>
-                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
-                        This system was engineered to solve a real-world municipal problem: <em>"City transport corporations often lack structured route-stop-trip and passenger data to properly plan bus frequency."</em> Below is a comprehensive breakdown of the computer science subjects, algorithmic foundations, database design, and software development methodologies implemented in this project.
-                    </p>
-                </div>
+        <!-- ================= END OF PUBLIC PORTAL ===================== -->
 
-                <!-- 6 Interactive Subject Cards Grid -->
-                <div>
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-layer-group text-rose-400"></i>
-                            <span>Core Engineering Subjects Used in This Project (Click any card to explore)</span>
-                        </h3>
-                        <span class="text-[11px] text-slate-400 font-mono">6 Modules</span>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        <!-- Card 1: DBMS -->
-                        <div onclick="openSubjectModal('DBMS')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-rose-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
-                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-rose-500/10 transition text-6xl pointer-events-none">
-                                <i class="fa-solid fa-database"></i>
-                            </div>
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 font-mono font-black text-xs border border-rose-500/30">DBMS</span>
-                                <span class="text-slate-400 group-hover:text-rose-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
-                            </div>
-                            <h4 class="font-bold text-white text-base mb-1">Database Management System</h4>
-                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Relational modeling, ER diagrams, foreign key constraints, 1-to-many relationships, ACID queries, and CRUD transaction integrity.</p>
-                            <span class="inline-flex items-center text-xs font-semibold text-rose-400 group-hover:underline gap-1">
-                                Click to explore DBMS concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                            </span>
-                        </div>
-
-                        <!-- Card 2: DMGT -->
-                        <div onclick="openSubjectModal('DMGT')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-blue-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
-                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-blue-500/10 transition text-6xl pointer-events-none">
-                                <i class="fa-solid fa-diagram-project"></i>
-                            </div>
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-mono font-black text-xs border border-blue-500/30">DMGT</span>
-                                <span class="text-slate-400 group-hover:text-blue-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
-                            </div>
-                            <h4 class="font-bold text-white text-base mb-1">Discrete Mathematics & Graph Theory</h4>
-                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Graph formalization: Stop = Vertex (V), Road connection = Edge (E), directed multi-route connectivity, and adjacency representations.</p>
-                            <span class="inline-flex items-center text-xs font-semibold text-blue-400 group-hover:underline gap-1">
-                                Click to explore DMGT concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                            </span>
-                        </div>
-
-                        <!-- Card 3: ADSA -->
-                        <div onclick="openSubjectModal('ADSA')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-emerald-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
-                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-emerald-500/10 transition text-6xl pointer-events-none">
-                                <i class="fa-solid fa-network-wired"></i>
-                            </div>
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono font-black text-xs border border-emerald-500/30">ADSA</span>
-                                <span class="text-slate-400 group-hover:text-emerald-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
-                            </div>
-                            <h4 class="font-bold text-white text-base mb-1">Advanced Data Structures & Algorithms</h4>
-                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Breadth-First Search (BFS) level-by-level route traversal, FIFO queues, shortest-hop exploration, and O(V + E) search complexity.</p>
-                            <span class="inline-flex items-center text-xs font-semibold text-emerald-400 group-hover:underline gap-1">
-                                Click to explore ADSA concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                            </span>
-                        </div>
-
-                        <!-- Card 4: OOP -->
-                        <div onclick="openSubjectModal('OOP')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-purple-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
-                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-purple-500/10 transition text-6xl pointer-events-none">
-                                <i class="fa-solid fa-cubes"></i>
-                            </div>
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-400 font-mono font-black text-xs border border-purple-500/30">OOP</span>
-                                <span class="text-slate-400 group-hover:text-purple-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
-                            </div>
-                            <h4 class="font-bold text-white text-base mb-1">Object Oriented Programming</h4>
-                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Object modeling: Real-world entities mapped to software objects (Route, Bus, Stop, Trip, Passenger) with encapsulation and modular methods.</p>
-                            <span class="inline-flex items-center text-xs font-semibold text-purple-400 group-hover:underline gap-1">
-                                Click to explore OOP concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                            </span>
-                        </div>
-
-                        <!-- Card 5: PYTHON -->
-                        <div onclick="openSubjectModal('PYTHON')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-amber-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
-                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-amber-500/10 transition text-6xl pointer-events-none">
-                                <i class="fa-brands fa-python"></i>
-                            </div>
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-mono font-black text-xs border border-amber-500/30">PYTHON</span>
-                                <span class="text-slate-400 group-hover:text-amber-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
-                            </div>
-                            <h4 class="font-bold text-white text-base mb-1">Python (Analytics & Architecture)</h4>
-                            <p class="text-xs text-slate-400 leading-relaxed mb-4">REST backend service, relational data aggregation, SQLite3 connection pooling, and predictive extra bus requirement calculation.</p>
-                            <span class="inline-flex items-center text-xs font-semibold text-amber-400 group-hover:underline gap-1">
-                                Click to explore Python concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                            </span>
-                        </div>
-
-                        <!-- Card 6: WEB DEVELOPMENT -->
-                        <div onclick="openSubjectModal('WEB_DEV')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-cyan-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
-                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-cyan-500/10 transition text-6xl pointer-events-none">
-                                <i class="fa-solid fa-code"></i>
-                            </div>
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-black text-xs border border-cyan-500/30">WEB DEV</span>
-                                <span class="text-slate-400 group-hover:text-cyan-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
-                            </div>
-                            <h4 class="font-bold text-white text-base mb-1">Web Development & REST API</h4>
-                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Semantic HTML5, responsive Tailwind styling, Vanilla JS state controller, asynchronous HTTP fetch, and session-based authentication.</p>
-                            <span class="inline-flex items-center text-xs font-semibold text-cyan-400 group-hover:underline gap-1">
-                                Click to explore Web Dev concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 9-Step Project Development Process -->
-                <div class="space-y-4 pt-6 border-t border-slate-800">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-base font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-timeline text-rose-400"></i>
-                            <span>Project Development Process (Step-by-Step Lifecycle)</span>
-                        </h3>
-                        <span class="text-xs text-slate-400">9 Phases</span>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
-                            <span class="font-mono text-rose-400 font-black">STEP 1</span>
-                            <h5 class="font-bold text-white">Problem Identification</h5>
-                            <p class="text-slate-400 text-[11px]">Identified lack of structured municipal transit data across Kakinada corridors causing irregular bus frequencies and commuter overcrowding.</p>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
-                            <span class="font-mono text-rose-400 font-black">STEP 2</span>
-                            <h5 class="font-bold text-white">Requirement Analysis</h5>
-                            <p class="text-slate-400 text-[11px]">Segregated roles into Public Commuters (search, view, remarks) and Depot Administrators (routes, fleet assignments, demand analysis).</p>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
-                            <span class="font-mono text-rose-400 font-black">STEP 3</span>
-                            <h5 class="font-bold text-white">System Design</h5>
-                            <p class="text-slate-400 text-[11px]">Architected dual-portal client-server architecture with REST endpoints, reactive UI state updates, and modular styling components.</p>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
-                            <span class="font-mono text-rose-400 font-black">STEP 4</span>
-                            <h5 class="font-bold text-white">Database Design</h5>
-                            <p class="text-slate-400 text-[11px]">Normalized relational schema (3NF) encompassing Routes, Stops, Fleet Buses, Timetables, Ticket Sales, Occupancies, and Remarks.</p>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
-                            <span class="font-mono text-rose-400 font-black">STEP 5</span>
-                            <h5 class="font-bold text-white">Frontend Development</h5>
-                            <p class="text-slate-400 text-[11px]">Constructed responsive accessible views, dynamic modals, real-time KPI aggregators, and interactive route-builder forms.</p>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
-                            <span class="font-mono text-rose-400 font-black">STEP 6</span>
-                            <h5 class="font-bold text-white">Backend Development</h5>
-                            <p class="text-slate-400 text-[11px]">Engineered lightweight Python HTTP REST service providing JSON CRUD, session validation, and static asset delivery without external server bloat.</p>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
-                            <span class="font-mono text-rose-400 font-black">STEP 7</span>
-                            <h5 class="font-bold text-white">Algorithm Implementation</h5>
-                            <p class="text-slate-400 text-[11px]">Coded BFS graph pathfinder for transfer routing and statistical regression models for route capacity & headway estimation.</p>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
-                            <span class="font-mono text-rose-400 font-black">STEP 8</span>
-                            <h5 class="font-bold text-white">Rigorous Testing</h5>
-                            <p class="text-slate-400 text-[11px]">Validated route CRUD, duplicate ID checks, multi-stop timing persistence, bus additions/removals, feedback workflows, and session persistence.</p>
-                        </div>
-                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
-                            <span class="font-mono text-rose-400 font-black">STEP 9</span>
-                            <h5 class="font-bold text-white">Deployment & Operation</h5>
-                            <p class="text-slate-400 text-[11px]">Configured unified local deployment running under Python standard library with npm lifecycle compatibility.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Architecture Diagram -->
-                <div class="space-y-4 pt-6 border-t border-slate-800">
-                    <h3 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-sitemap text-rose-400"></i>
-                        <span>System Architecture Diagram</span>
-                    </h3>
-                    <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto leading-relaxed">
-                        <pre class="text-slate-200">
-+----------------------------------------------------------------------------------------------------+
-|                                    PUBLIC COMMUTER (NO LOGIN)                                      |
-+----------------------------------------------------------------------------------------------------+
-                                                  │
-                                                  ▼
-+────────────────────────────────────────────────────────────────────────────────────────────────────+
-|                                        PUBLIC WEB PORTAL                                           |
-|  • Route Search & Headway  • Stop Timetables  • BFS Graph Pathfinding  • Public Passenger Remarks  |
-+────────────────────────────────────────────────────────────────────────────────────────────────────+
-                                                  │
-                                                  ▼ REST APIs (JSON over HTTP)
-+────────────────────────────────────────────────────────────────────────────────────────────────────+
-|                                    BACKEND / REST DATA ENGINE                                      |
-|                                       (server.py & db.py)                                          |
-|                                                                                                    |
-|   ├── GET  /api/routes                ├── GET/POST /api/feedback (Public Remarks)                  |
-|   ├── GET  /api/stops                 ├── POST/PUT /api/routes   (Admin Protected)                 |
-|   ├── GET  /api/buses                 ├── POST/PUT /api/buses    (Admin Protected)                 |
-|   ├── GET  /api/timings               ├── GET      /api/route-conditions (Dynamic Extra Bus Model) |
-|   └── GET  /api/overview              └── GET/POST /api/algorithms/bfs (Graph Traversal Engine)    |
-+────────────────────────────────────────────────────────────────────────────────────────────────────+
-                                                  │
-                                                  ▼ ACID SQLite3 Relational Engine
-+────────────────────────────────────────────────────────────────────────────────────────────────────+
-|                                   DATABASE LAYER (transit.db)                                      |
-|                                                                                                    |
-|   • bus_routes (PK: id, route_number, origin, dest, distance_km, travel_time_mins, required_buses) |
-|   • bus_stops  (PK: id, code, name, latitude, longitude, status)                                   |
-|   • route_stops(FK: route_id, stop_id, stop_sequence, arrival_time, departure_time)                |
-|   • buses      (PK: id, bus_number, type, capacity, occupancy, status, driver, conductor, route_id)|
-|   • timetables (FK: route_id, bus_id, trip_identifier, departure_time, arrival_time)               |
-|   • feedback   (PK: id, passenger_name, contact_info, route_id, bus_number, remark, rating, status)|
-+────────────────────────────────────────────────────────────────────────────────────────────────────+
-                                                  ▲
-                                                  │ Secure Session Authorization
-+────────────────────────────────────────────────────────────────────────────────────────────────────+
-|                                  ADMIN COMMAND PORTAL (PROTECTED)                                  |
-|  • Dashboard (8 Dynamic KPIs)  • Route Registry (Add/Edit)  • Bus Management (Assign/Remove Buses) |
-|  • Bus Stops Management        • Ticket Demand & Revenue    • Public Remarks Triage Board          |
-|  • Route Condition & Extra Bus Analysis Table (Dynamic GREEN / RED Operational Status Indicators)  |
-+────────────────────────────────────────────────────────────────────────────────────────────────────+
-                        </pre>
-                    </div>
-                </div>
-
-                <!-- Practical Use of the Project (12 Points) -->
-                <div class="space-y-4 pt-6 border-t border-slate-800">
-                    <h3 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-list-check text-rose-400"></i>
-                        <span>Practical & Social Use of the Project (12 Real-World Operational Applications)</span>
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-300">
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">1</span>
-                            <span><strong>Rapid Route Discovery:</strong> Helps daily commuters instantly find direct and connecting bus routes across Kakinada.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">2</span>
-                            <span><strong>Accurate Stop Timings:</strong> Provides reliable scheduled departure and arrival hours for intermediate stops.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">3</span>
-                            <span><strong>Operational Route Planning:</strong> Empowers depot controllers to organize origin, destination, and intermediate stops with exact sequence and times.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">4</span>
-                            <span><strong>Fleet Availability Monitoring:</strong> Tracks active buses, maintenance vehicles, and reserve capacity per depot.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">5</span>
-                            <span><strong>Overcrowding Identification:</strong> Automatically highlights routes operating at or exceeding 90% seating capacity.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">6</span>
-                            <span><strong>Passenger Demand Analytics:</strong> Aggregates electronic ticketing data to identify peak boarding hotspots.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">7</span>
-                            <span><strong>Dynamic Bus Allocation:</strong> Allows administrators to add or remove bus assignments as ridership surges shift across corridors.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">8</span>
-                            <span><strong>Public Citizen Feedback:</strong> Collects structured passenger remarks regarding cleanliness, delays, and stop issues for prompt depot resolution.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">9</span>
-                            <span><strong>Structured Transport Database:</strong> Replaces disparate paper spreadsheets with a relational ACID-compliant database.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">10</span>
-                            <span><strong>Future Extension — Live GPS:</strong> Designed with clean modular interfaces ready to integrate GTFS real-time vehicle locator streams.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">11</span>
-                            <span><strong>Future Extension — Smart Ticketing:</strong> Ready to ingest contactless QR/NFC ticketing logs for real-time origin-destination fare calculation.</span>
-                        </div>
-                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
-                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">12</span>
-                            <span><strong>Future Extension — AI Demand Forecasting:</strong> Pre-structured for full neural/regression models utilizing weather and holiday event datasets.</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Project Summary -->
-                <div class="bg-slate-800/60 p-5 rounded-2xl border border-slate-700/80 space-y-2">
-                    <h4 class="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-flag-checkered text-rose-400"></i> Project Summary
-                    </h4>
-                    <p class="text-xs text-slate-300 leading-relaxed">
-                        This project combines <strong>database management systems (DBMS)</strong>, <strong>discrete mathematics & graph theory (DMGT)</strong>, <strong>advanced data structures and algorithms (ADSA)</strong>, <strong>object-oriented programming (OOP)</strong>, <strong>Python data analytics</strong>, and <strong>modern web engineering</strong> to deliver an end-to-end municipal transit management and route optimization platform. By structuring route topologies, intermediate stoppages, passenger ticket sales, and bus fleet assignments into an operational feedback loop, the system empowers transport authorities to make data-driven decisions that alleviate urban congestion and optimize headway frequency.
-                    </p>
-                </div>
-            </div>
-
-
-        <!-- ============================================================== -->
         <!-- ================= 2. ADMIN DASHBOARD VIEW ==================== -->
         <!-- ============================================================== -->
         <div id="view-admin" class="hidden space-y-6 animate-fadeIn">
@@ -904,21 +591,31 @@
                     <h2 class="text-2xl font-black">APSRTC Kakinada Depot Command Center</h2>
                     <p class="text-xs text-slate-400">Configure city routes, bus stops, timetables, ticket demand, occupancy, and service alerts.</p>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <div class="text-right hidden sm:block">
-                        <span id="admin-user-display" class="text-sm font-bold text-white block">admin (Depot Manager)</span>
-                        <span id="admin-session-time" class="text-xs text-slate-400">Session: Verified</span>
-                    </div>
-                    <button onclick="handleLogout()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow flex items-center space-x-1.5">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                        <span>Logout</span>
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <button onclick="openBusModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-bus"></i> + Add Bus
+                    </button>
+                    <button onclick="openRouteModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3.5 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-route"></i> + Add Route
+                    </button>
+                    <button onclick="openStopModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold px-3.5 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-location-dot"></i> + Add Stop
+                    </button>
+                    <button onclick="switchView('public')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-bold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-earth-americas"></i> Public View
+                    </button>
+                    <button onclick="handleLogout()" class="bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 font-bold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-power-off"></i> Logout
                     </button>
                 </div>
             </div>
 
             <!-- Admin Sub-Navigation (12 Sections in prompt) -->
             <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex overflow-x-auto space-x-1.5 scrollbar-thin">
-                <button onclick="switchAdminSection('overview')" id="adm-nav-overview" class="admin-nav-item active px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap">
+                <button onclick="switchAdminSection('overview')" id="adm-nav-overview"
+                <button onclick="switchAdminSection('graphs')" id="adm-nav-graphs" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-chart-line text-rose-500"></i> <span>Graphs Dashboard</span>
+                </button> class="admin-nav-item active px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap">
                     <i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span>
                 </button>
                 <button onclick="switchAdminSection('routes')" id="adm-nav-routes" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
@@ -946,7 +643,7 @@
                     <i class="fa-solid fa-traffic-light"></i> <span>Route Condition</span>
                 </button>
                 <button onclick="switchAdminSection('project-info')" id="adm-nav-project-info" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
-                    <i class="fa-solid fa-circle-info"></i> <span>Project Information</span>
+                    <i class="fa-solid fa-graduation-cap text-rose-500"></i> <span>Project Preparation & Docs</span>
                 </button>
                 <button onclick="handleLogout()" class="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition flex items-center gap-1.5 whitespace-nowrap ml-auto">
                     <i class="fa-solid fa-right-from-bracket"></i> <span>Logout</span>
@@ -955,6 +652,29 @@
 
             <!-- SECTION A: DASHBOARD OVERVIEW -->
             <div id="admin-sec-overview" class="admin-section space-y-6">
+                <!-- Operations Command Quick Actions Bar -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-xs font-bold text-slate-800">Depot Operations Quick Actions:</span>
+                        <span class="text-[11px] text-slate-500 hidden md:inline">• Real-time Fleet & Network Management</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="openBusModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition shadow flex items-center gap-1">
+                            <i class="fa-solid fa-bus"></i> + Add Bus
+                        </button>
+                        <button onclick="openRouteModal()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition shadow flex items-center gap-1">
+                            <i class="fa-solid fa-route"></i> + Add Route
+                        </button>
+                        <button onclick="openStopModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1">
+                            <i class="fa-solid fa-location-dot"></i> + Add Stop
+                        </button>
+                        <button onclick="loadAdminOverview(); renderRouteConditionTable();" class="text-slate-500 hover:text-slate-800 p-2 text-xs font-bold transition ml-1" title="Refresh Dashboard Data">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Summary KPI Cards (Section 4) -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -1054,6 +774,37 @@
                         <span>Passenger Demand Distribution by Kakinada Route</span>
                     </h4>
                     <div id="overview-ridership-bars" class="space-y-3"></div>
+
+                    <!-- Quick Visual Analytics Graphs (Dual Charts) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-route text-indigo-600"></i> Route Demand vs Revenue Yield
+                                </span>
+                                <button onclick="switchAdminSection('graphs')" class="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1">
+                                    <span>Expanded View</span> <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+                            <div class="h-60 relative w-full">
+                                <canvas id="overview-chart-route-demand"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-bus text-emerald-600"></i> Bus Fleet Utilization & Reserve Pool
+                                </span>
+                                <button onclick="switchAdminSection('graphs')" class="text-[10px] text-rose-600 hover:text-rose-800 font-bold flex items-center gap-1">
+                                    <span>Fleet Details</span> <i class="fa-solid fa-arrow-right"></i>
+                                </button>
+                            </div>
+                            <div class="h-60 relative w-full">
+                                <canvas id="overview-chart-bus-fleet"></canvas>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             
                 <!-- Route Condition & Extra Bus Requirement Live Analysis -->
@@ -1090,6 +841,401 @@
                         </table>
                     </div>
                 </div>
+            </div>
+
+            
+            <!-- ============================================================== -->
+            <!-- ====== SECTION: GRAPHS & VISUAL ANALYTICS DASHBOARD ========== -->
+            <!-- ============================================================== -->
+            <div id="admin-sec-graphs" class="admin-section hidden space-y-6 animate-fadeIn">
+                
+                <!-- Graphs Top Command Banner -->
+                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-800 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="bg-rose-500/20 text-rose-300 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span> Live Visual Telemetry
+                            </span>
+                            <span class="bg-indigo-500/20 text-indigo-300 text-xs font-semibold px-3 py-1 rounded-full border border-indigo-500/30">
+                                Statistical Fleet & Route Modeling
+                            </span>
+                            <span class="bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30">
+                                APSRTC Kakinada Network
+                            </span>
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black tracking-tight">
+                            Transit Intelligence & Graphs Dashboard
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                            Comprehensive visual analytics monitoring overall fleet capacity, bus occupancy distribution, route ridership volumes, and corridor revenue efficiency across Kakinada.
+                        </p>
+                    </div>
+
+                    <!-- Category Filter Buttons & Refresh -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="filterGraphsCategory('all')" id="btn-graph-filter-all" class="graph-filter-btn active bg-rose-600 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-chart-pie"></i> All Graphs
+                        </button>
+                        <button onclick="filterGraphsCategory('buses')" id="btn-graph-filter-buses" class="graph-filter-btn bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5 border border-slate-700">
+                            <i class="fa-solid fa-bus"></i> Bus Fleet Analytics
+                        </button>
+                        <button onclick="filterGraphsCategory('routes')" id="btn-graph-filter-routes" class="graph-filter-btn bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-1.5 border border-slate-700">
+                            <i class="fa-solid fa-route"></i> Route Corridor Graphs
+                        </button>
+                        <button onclick="loadAdminGraphs()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl text-xs transition border border-slate-700" title="Refresh Graph Data">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Overall Bus Fleet Details & KPI Metrics Banner -->
+                <div id="graphs-buses-kpi" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-400 uppercase">Total Fleet Vehicles</span>
+                            <span class="p-2 bg-rose-50 text-rose-600 rounded-xl text-xs"><i class="fa-solid fa-bus"></i></span>
+                        </div>
+                        <h4 id="graph-kpi-total-buses" class="text-2xl sm:text-3xl font-black text-slate-900 mt-2">--</h4>
+                        <span class="text-[11px] text-rose-600 font-semibold mt-1 block">Registered in Depot</span>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-400 uppercase">Fleet Seating Capacity</span>
+                            <span class="p-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs"><i class="fa-solid fa-chair"></i></span>
+                        </div>
+                        <h4 id="graph-kpi-total-seats" class="text-2xl sm:text-3xl font-black text-indigo-600 mt-2">--</h4>
+                        <span class="text-[11px] text-indigo-700 font-semibold mt-1 block">Aggregate Seats Available</span>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-400 uppercase">Active Route Allocation</span>
+                            <span class="p-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs"><i class="fa-solid fa-circle-check"></i></span>
+                        </div>
+                        <h4 id="graph-kpi-active-rate" class="text-2xl sm:text-3xl font-black text-emerald-600 mt-2">--</h4>
+                        <span id="graph-kpi-active-buses-sub" class="text-[11px] text-emerald-700 font-semibold mt-1 block">-- Assigned to Routes</span>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-400 uppercase">Reserve Standby Pool</span>
+                            <span class="p-2 bg-amber-50 text-amber-600 rounded-xl text-xs"><i class="fa-solid fa-warehouse"></i></span>
+                        </div>
+                        <h4 id="graph-kpi-reserve-buses" class="text-2xl sm:text-3xl font-black text-amber-600 mt-2">--</h4>
+                        <span class="text-[11px] text-amber-700 font-semibold mt-1 block">Available for Extra Demand</span>
+                    </div>
+                </div>
+
+                <!-- ================= BUS FLEET GRAPHS SECTION ================= -->
+                <div id="graphs-sec-buses" class="space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-bus"></i>
+                            </span>
+                            <div>
+                                <h3 class="font-extrabold text-slate-900 text-lg">Overall Bus Fleet Details & Graphs</h3>
+                                <p class="text-xs text-slate-500">Fleet composition by vehicle type, operational deployment ratio, and passenger load vs seating capacity.</p>
+                            </div>
+                        </div>
+                        <button onclick="openBusModal()" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-plus"></i> Add Bus
+                        </button>
+                    </div>
+
+                    <!-- Row 1: Bus Types & Status Doughnuts -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Graph 1: Bus Type Distribution -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-pie-chart text-rose-600"></i> Fleet Breakdown by Bus Type
+                                </h4>
+                                <span class="text-[11px] bg-rose-50 text-rose-600 font-semibold px-2 py-0.5 rounded">Category Mix</span>
+                            </div>
+                            <div class="h-64 relative flex items-center justify-center">
+                                <canvas id="chart-bus-types"></canvas>
+                            </div>
+                            <p class="text-xs text-slate-500 text-center">City Ordinary vs Metro Express vs Palle Velugu fleet shares.</p>
+                        </div>
+
+                        <!-- Graph 2: Bus Deployment & Status Ratio -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-chart-pie text-emerald-600"></i> Fleet Deployment & Operational Status
+                                </h4>
+                                <span class="text-[11px] bg-emerald-50 text-emerald-600 font-semibold px-2 py-0.5 rounded">Depot Status</span>
+                            </div>
+                            <div class="h-64 relative flex items-center justify-center">
+                                <canvas id="chart-bus-status"></canvas>
+                            </div>
+                            <p class="text-xs text-slate-500 text-center">Active corridor assignments vs available standby reserve vehicles.</p>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Bus-by-Bus Occupancy vs Seating Capacity -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                                    <i class="fa-solid fa-users-viewfinder text-indigo-600"></i>
+                                    <span>Individual Bus Passenger Occupancy vs Seating Capacity</span>
+                                </h4>
+                                <p class="text-xs text-slate-500">Comparing current passenger load against manufacturer seating limits for each registered bus.</p>
+                            </div>
+                            <span class="text-xs bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-lg">ETM Real-Time Telemetry</span>
+                        </div>
+                        <div class="h-80 relative w-full">
+                            <canvas id="chart-bus-occupancy"></canvas>
+                        </div>
+                    </div>
+
+                    
+                    <!-- ============================================================== -->
+                    <!-- = USER REQUESTED: PASSENGERS TRAVELLED & STOPS TRAVERSED ===== -->
+                    <!-- ============================================================== -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Graph A: Number of Passengers Travelled per Bus -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                        <i class="fa-solid fa-users text-rose-600"></i>
+                                        <span>Number of Passengers Travelled by Bus</span>
+                                    </h4>
+                                    <p class="text-xs text-slate-400">Total verified commuter volume carried on each vehicle</p>
+                                </div>
+                                <span class="text-xs bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded">Ridership Volume</span>
+                            </div>
+                            <div class="h-72 relative w-full">
+                                <canvas id="chart-bus-passengers-travelled"></canvas>
+                            </div>
+                            <p class="text-xs text-slate-500 text-center">ETM ticket aggregations & passenger trip boarding telemetry.</p>
+                        </div>
+
+                        <!-- Graph B: Bus Stops Traversed Along Corridor -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                        <i class="fa-solid fa-location-dot text-indigo-600"></i>
+                                        <span>Bus Stops Traversed & Serviced</span>
+                                    </h4>
+                                    <p class="text-xs text-slate-400">Total sequential corridor stops visited per vehicle</p>
+                                </div>
+                                <span class="text-xs bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded">Network Reach</span>
+                            </div>
+                            <div class="h-72 relative w-full">
+                                <canvas id="chart-bus-stops-traversed"></canvas>
+                            </div>
+                            <p class="text-xs text-slate-500 text-center">Corridor stop coverage based on active route sequences.</p>
+                        </div>
+                    </div>
+
+                    <!-- ============================================================== -->
+                    <!-- = USER REQUESTED: TOTAL BUS FLEET RANKING & LEADERBOARD ====== -->
+                    <!-- ============================================================== -->
+                    <div class="bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 text-white p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-800 space-y-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-4">
+                            <div>
+                                <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/40 inline-flex items-center gap-1.5 mb-2">
+                                    <i class="fa-solid fa-trophy text-amber-400"></i> Fleet Leaderboard & Efficiency Scoring
+                                </span>
+                                <h3 class="text-xl sm:text-2xl font-black text-white">
+                                    Total Bus Fleet Performance & Rank
+                                </h3>
+                                <p class="text-xs sm:text-sm text-slate-300">
+                                    Comprehensive ranking evaluating total passengers travelled, corridor stops traversed, seating capacity utilization, and revenue contribution.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-slate-400">Scoring Weight:</span>
+                                <span class="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 font-mono">Pax (40%) + Load (30%) + Stops (30%)</span>
+                            </div>
+                        </div>
+
+                        <!-- Top 3 Fleet Podium Cards -->
+                        <div id="bus-fleet-podium" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Populated dynamically via JS: Rank 1 Gold, Rank 2 Silver, Rank 3 Bronze -->
+                        </div>
+
+                        <!-- Graph C: Fleet Ranking Index Bar Chart -->
+                        <div class="bg-slate-900/90 p-5 rounded-2xl border border-slate-800 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-ranking-star text-amber-400"></i>
+                                    <span>Bus Fleet Performance Score Ranking Index (0 - 100 Points)</span>
+                                </h4>
+                                <span class="text-[11px] text-slate-400 font-mono">Ranked Highest to Lowest</span>
+                            </div>
+                            <div class="h-72 relative w-full">
+                                <canvas id="chart-bus-fleet-ranks"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Full Bus Fleet Ranking Table -->
+                        <div class="bg-slate-900/80 rounded-2xl border border-slate-800 overflow-hidden">
+                            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+                                <h4 class="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-2">
+                                    <i class="fa-solid fa-list-ol text-rose-400"></i> Complete Fleet Ranking & Telemetry Table
+                                </h4>
+                                <span class="text-[11px] text-slate-400">Official APSRTC Performance Triage</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-slate-950/70 text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                        <tr>
+                                            <th class="p-3.5 text-center">Rank</th>
+                                            <th class="p-3.5">Bus Number</th>
+                                            <th class="p-3.5">Assigned Route</th>
+                                            <th class="p-3.5 text-center text-rose-400 font-bold">Passengers Travelled</th>
+                                            <th class="p-3.5 text-center text-indigo-400 font-bold">Stops Covered</th>
+                                            <th class="p-3.5 text-center">Load Factor</th>
+                                            <th class="p-3.5 text-right text-emerald-400">Revenue</th>
+                                            <th class="p-3.5 text-center text-amber-400 font-bold">Performance Score</th>
+                                            <th class="p-3.5 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="graph-bus-ranking-tbody" class="divide-y divide-slate-800/60 text-slate-200">
+                                        <!-- Populated dynamically via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Bus Fleet Summary Details Table -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-table-list text-slate-700"></i> Bus Fleet Telemetry & Assignment Log
+                            </h4>
+                            <span class="text-xs text-slate-500">All registered vehicles</span>
+                        </div>
+                        <div class="overflow-x-auto rounded-xl border border-slate-100">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Bus Number</th>
+                                        <th class="p-3">Type</th>
+                                        <th class="p-3">Assigned Route</th>
+                                        <th class="p-3 text-center">Capacity</th>
+                                        <th class="p-3 text-center">Occupancy</th>
+                                        <th class="p-3 text-center">Load Factor</th>
+                                        <th class="p-3">Crew (Driver / Conductor)</th>
+                                        <th class="p-3 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="graph-bus-telemetry-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= ROUTE CORRIDOR GRAPHS SECTION ================= -->
+                <div id="graphs-sec-routes" class="space-y-6 pt-4">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-route"></i>
+                            </span>
+                            <div>
+                                <h3 class="font-extrabold text-slate-900 text-lg">Route Corridors Graphical Intelligence</h3>
+                                <p class="text-xs text-slate-500">Passenger demand, revenue yield, congestion ratios, and extra bus requirement models.</p>
+                            </div>
+                        </div>
+                        <button onclick="openRouteModal()" class="text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1 shadow-sm">
+                            <i class="fa-solid fa-plus"></i> Add Route
+                        </button>
+                    </div>
+
+                    <!-- Row 1: Passenger Demand vs Fare Revenue Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Graph 4: Route Passenger Ridership -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                        <i class="fa-solid fa-users text-rose-600"></i> Passenger Ridership by Route Corridor
+                                    </h4>
+                                    <p class="text-xs text-slate-400">Total verified commuter volume</p>
+                                </div>
+                                <span class="text-xs bg-rose-50 text-rose-700 font-bold px-2 py-0.5 rounded">Ridership</span>
+                            </div>
+                            <div class="h-72 relative w-full">
+                                <canvas id="chart-route-demand"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Graph 5: Route Fare Revenue -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                        <i class="fa-solid fa-indian-rupee-sign text-emerald-600"></i> Fare Revenue Collection by Route (₹ INR)
+                                    </h4>
+                                    <p class="text-xs text-slate-400">Financial yield per transit corridor</p>
+                                </div>
+                                <span class="text-xs bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded">Revenue</span>
+                            </div>
+                            <div class="h-72 relative w-full">
+                                <canvas id="chart-route-revenue"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Route Congestion Index & 85% Overload Threshold -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                                    <i class="fa-solid fa-gauge-high text-amber-600"></i>
+                                    <span>Route Congestion Factor & 85% Overload Threshold</span>
+                                </h4>
+                                <p class="text-xs text-slate-500">Corridors reaching &gt;85% load trigger mandatory additional bus assignment flags.</p>
+                            </div>
+                            <span class="text-xs bg-amber-50 text-amber-700 font-bold px-3 py-1 rounded-full border border-amber-200">
+                                Critical Threshold: 85%
+                            </span>
+                        </div>
+                        <div class="h-80 relative w-full">
+                            <canvas id="chart-route-congestion"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Corridor Profile (Distance vs Travel Time) & Fleet Allocation Comparison -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Graph 7: Distance vs Travel Duration -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-road text-slate-700"></i> Route Distance (km) vs Travel Duration (mins)
+                                </h4>
+                                <span class="text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded">Geometry</span>
+                            </div>
+                            <div class="h-72 relative w-full">
+                                <canvas id="chart-route-distance-time"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Graph 8: Assigned Fleet vs Extra Bus Requirements -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-bus-simple text-purple-600"></i> Current Assigned Buses vs Extra Bus Needs
+                                </h4>
+                                <span class="text-xs bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded">Fleet Planning</span>
+                            </div>
+                            <div class="h-72 relative w-full">
+                                <canvas id="chart-route-buses"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- SECTION B: MANAGE BUS ROUTES -->
@@ -1531,6 +1677,25 @@
                 <div id="bus-mgmt-routes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <!-- Populated dynamically via JS -->
                 </div>
+
+                <!-- Depot Reserve Fleet Pool (Unassigned Buses ready for dispatch) -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-blue-50 text-blue-600 p-2 rounded-xl text-sm font-bold"><i class="fa-solid fa-warehouse"></i></span>
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm sm:text-base">Depot Reserve Fleet Pool (Unassigned Vehicles)</h4>
+                                <p class="text-xs text-slate-500">Available reserve buses ready for assignment to corridors with high passenger demand or fleet shortages.</p>
+                            </div>
+                        </div>
+                        <button onclick="openBusModal()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow">
+                            <i class="fa-solid fa-plus"></i> + Register Reserve Bus
+                        </button>
+                    </div>
+                    <div id="bus-mgmt-reserve-pool" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
             </div>
 
             <!-- SECTION: PUBLIC REMARKS (Triage Board) -->
@@ -1674,20 +1839,218 @@
                 </div>
             </div>
 
-            <!-- SECTION: PROJECT INFORMATION & PRESENTATION -->
+            <!-- SECTION: PROJECT INFORMATION & PREPARATION (Academic Defense & System Architecture) -->
             <div id="admin-sec-project-info" class="admin-section hidden space-y-6">
-                <div class="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
-                    <div class="flex items-center gap-2">
-                        <span class="bg-rose-500/20 text-rose-400 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30">Depot System Docs</span>
+                
+                <!-- Academic Defense Banner -->
+                <div class="bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950 text-white p-6 sm:p-10 rounded-3xl shadow-xl border border-slate-800 space-y-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="bg-rose-500/20 text-rose-300 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/40">
+                            Academic Presentation & Project Defense
+                        </span>
+                        <span class="bg-indigo-500/20 text-indigo-300 text-xs font-semibold px-3 py-1 rounded-full border border-indigo-500/40">
+                            Engineering Curriculum Synthesis
+                        </span>
+                        <span class="bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/40">
+                            APSRTC Kakinada City Transit System
+                        </span>
                     </div>
-                    <h3 class="text-2xl font-black">Kakinada City Transit & Route Optimizer Architecture</h3>
-                    <p class="text-xs text-slate-300 leading-relaxed max-w-3xl">
-                        Designed as a comprehensive solution for municipal transport planning. Integrates Relational DBMS (SQLite3), Graph Theory (DMGT), Breadth-First Search (ADSA), Object-Oriented Modeling (OOP), and Python REST web services to eliminate commuter overcrowding and streamline bus headway management.
+                    <h2 class="text-2xl sm:text-4xl font-black tracking-tight">
+                        Project Preparation & System Architecture <span class="text-rose-400">— Core Concepts & Implementation</span>
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-4xl">
+                        This system was engineered to solve real-world municipal transportation challenges: <em>"City transport corporations often lack structured route-stop-trip and passenger data to properly plan bus frequency and prevent overcrowding."</em> Below is the comprehensive breakdown of the computer science subjects, algorithmic foundations, database design, and software development methodologies implemented in this project.
                     </p>
-                    <div class="pt-2 flex flex-wrap gap-3">
-                        <button onclick="switchView('public'); scrollToSection('how-project-was-made-section');" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
-                            <i class="fa-solid fa-graduation-cap"></i> View Full 6-Subject Presentation
+                </div>
+
+                <!-- 6 Interactive Subject Cards Grid -->
+                <div class="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-4">
+                        <div>
+                            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-layer-group text-rose-400"></i>
+                                <span>Core Engineering Subjects Used in This Project (Click any card to explore)</span>
+                            </h3>
+                            <p class="text-xs text-slate-400">Detailed theory, practical real-world applied concepts, and code architecture.</p>
+                        </div>
+                        <span class="text-xs text-rose-300 font-mono bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 font-bold">6 Modules</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <!-- Card 1: DBMS -->
+                        <div onclick="openSubjectModal('DBMS')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-rose-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-rose-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-database"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 font-mono font-black text-xs border border-rose-500/30">DBMS</span>
+                                <span class="text-slate-400 group-hover:text-rose-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Database Management System</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Relational modeling, ER diagrams, foreign key constraints, 1-to-many relationships, ACID queries, and CRUD transaction integrity.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-rose-400 group-hover:underline gap-1">
+                                Click to explore DBMS concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 2: DMGT -->
+                        <div onclick="openSubjectModal('DMGT')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-blue-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-blue-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-diagram-project"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-mono font-black text-xs border border-blue-500/30">DMGT</span>
+                                <span class="text-slate-400 group-hover:text-blue-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Discrete Mathematics & Graph Theory</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Graph formalization: Stop = Vertex (V), Road connection = Edge (E), directed multi-route connectivity, and adjacency representations.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-blue-400 group-hover:underline gap-1">
+                                Click to explore DMGT concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 3: ADSA -->
+                        <div onclick="openSubjectModal('ADSA')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-emerald-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-emerald-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-network-wired"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono font-black text-xs border border-emerald-500/30">ADSA</span>
+                                <span class="text-slate-400 group-hover:text-emerald-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Advanced Data Structures & Algorithms</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Breadth-First Search (BFS) unweighted shortest path traversal, FIFO queue operational mechanics, and O(V + E) computational efficiency.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-emerald-400 group-hover:underline gap-1">
+                                Click to explore ADSA concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 4: OOP -->
+                        <div onclick="openSubjectModal('OOP')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-amber-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-amber-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-cubes"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-mono font-black text-xs border border-amber-500/30">OOP</span>
+                                <span class="text-slate-400 group-hover:text-amber-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Object-Oriented Programming</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Domain modeling of Transit Entities (Bus, Route, Stop, Schedule), encapsulation of mutable state, clean class hierarchies, and separation of concerns.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-amber-400 group-hover:underline gap-1">
+                                Click to explore OOP concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 5: Python -->
+                        <div onclick="openSubjectModal('PYTHON')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-cyan-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-cyan-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-brands fa-python"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-black text-xs border border-cyan-500/30">PYTHON</span>
+                                <span class="text-slate-400 group-hover:text-cyan-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Python Data Analytics & Regression</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Lightweight HTTP API backend, token hashing (PBKDF2-HMAC), ridership trend aggregation, and predictive fleet allocation models.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-cyan-400 group-hover:underline gap-1">
+                                Click to explore Python concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 6: Web Dev -->
+                        <div onclick="openSubjectModal('WEB_DEV')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-purple-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-purple-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-code"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-400 font-mono font-black text-xs border border-purple-500/30">WEB DEV</span>
+                                <span class="text-slate-400 group-hover:text-purple-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Modern Web Engineering & SPA</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Unified single-page interface, asynchronous REST HTTP JSON communications, responsive Tailwind styling, and reactive DOM rendering.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-purple-400 group-hover:underline gap-1">
+                                Click to explore Web Dev concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 12-Point Comprehensive Project Preparation & Viva Defense Guide -->
+                <div class="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
+                    <div class="border-b border-slate-800 pb-3">
+                        <span class="text-rose-400 text-xs font-bold uppercase tracking-wider">Exam & Viva Preparation Guide</span>
+                        <h3 class="text-lg font-bold text-white mt-1">12 Key Defense Questions & Architectural Highlights</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-300">
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">1</span>
+                            <span><strong>Problem Statement & Motivation:</strong> Solves municipal bus scheduling bottlenecks by combining spatial graph networks with empirical passenger ticketing telemetry.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">2</span>
+                            <span><strong>Relational Database (DBMS):</strong> Normalized schema (3NF) ensuring <code>UNIQUE(route_id, stop_sequence)</code> integrity and cascading referential constraints.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">3</span>
+                            <span><strong>Graph Theory Formalization:</strong> Models bus stops as graph vertices $V$ and interconnecting road links as directed multi-edges $E$ in an adjacency list.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">4</span>
+                            <span><strong>Algorithmic Traversal (ADSA):</strong> Breadth-First Search (BFS) operates in $O(V+E)$ time using a FIFO queue to determine the absolute minimum transit transfers.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">5</span>
+                            <span><strong>OOP Modularity:</strong> Decoupled entities (Bus, Route, Stop, Schedule) adhere to Single Responsibility Principle (SRP) and provide clean mutators.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">6</span>
+                            <span><strong>Dynamic Capacity Algorithm:</strong> Automatically triggers extra bus recommendation whenever passenger demand exceeds fleet capacity by $\ge 90\%$.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">7</span>
+                            <span><strong>RESTful API Architecture:</strong> Clean JSON-based endpoints with token-based authentication header verification and CORS compatibility.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">8</span>
+                            <span><strong>Public-Admin Segregation:</strong> Strict view isolation protecting administrative mutations while providing rapid, responsive access to passengers.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">9</span>
+                            <span><strong>ETM Telemetry Processing:</strong> Real-time aggregation of boarding volumes per stop to isolate high-demand bottlenecks across Kakinada.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">10</span>
+                            <span><strong>Cryptographic Security:</strong> Password hashes generated using PBKDF2-HMAC-SHA256 with 100,000 rounds and unique 16-byte random salts.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">11</span>
+                            <span><strong>Haversine Geodesic Math:</strong> Great-circle distance calculations between geographic latitude/longitude coordinate pairs.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">12</span>
+                            <span><strong>Future AI Expansion:</strong> Structured data interfaces ready for integration with random forest and neural network transit demand models.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Project Preparation Notes Editor (Customizable by Admin) -->
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-rose-50 text-rose-600 p-2 rounded-xl text-sm font-bold"><i class="fa-solid fa-pen-to-square"></i></span>
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-sm sm:text-base">Project Preparation & Defense Notes Customizer</h4>
+                                <p class="text-xs text-slate-500">Add custom viva notes, examiner speaking points, or operational depot instructions (persists in browser storage).</p>
+                            </div>
+                        </div>
+                        <button onclick="saveProjectNotes()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Preparation Notes
                         </button>
+                    </div>
+                    <textarea id="project-preparation-notes-input" rows="5" class="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs font-mono text-slate-800 focus:ring-2 focus:ring-rose-500/20 focus:outline-none" placeholder="Enter custom project preparation notes..."></textarea>
+                    <div class="flex justify-between items-center text-[11px] text-slate-400">
+                        <span><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i> Changes saved locally and preserved across browser refreshes</span>
+                        <button onclick="resetProjectNotesToDefault()" class="text-rose-600 hover:underline font-semibold">Restore Default Defense Notes</button>
                     </div>
                 </div>
             </div>

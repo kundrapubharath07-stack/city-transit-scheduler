@@ -11,7 +11,18 @@ import secrets
 from datetime import datetime, timedelta
 import math
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transit.db")
+if os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/transit.db"
+    source_db = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transit.db")
+    if os.path.exists(source_db) and not os.path.exists(DB_PATH):
+        try:
+            import shutil
+            shutil.copyfile(source_db, DB_PATH)
+        except Exception:
+            pass
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "transit.db")
+
 
 def hash_password(password: str, salt: bytes = None) -> tuple[str, str]:
     if salt is None:
@@ -810,14 +821,57 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT b.*, r.route_number, r.route_name,
-                       s_orig.name AS origin_name, s_dest.name AS dest_name
+                       s_orig.name AS origin_name, s_dest.name AS dest_name,
+                       COALESCE((SELECT COUNT(*) FROM route_stops rs WHERE rs.route_id = b.current_route_id), 0) AS stops_count,
+                       COALESCE((SELECT SUM(ticket_count) FROM ticket_sales ts WHERE ts.bus_id = b.id), 0) AS ticket_pax,
+                       COALESCE((SELECT SUM(fare_collected) FROM ticket_sales ts WHERE ts.bus_id = b.id), 0.0) AS ticket_revenue,
+                       COALESCE((SELECT recorded_tickets FROM occupancy_records occ WHERE occ.bus_id = b.id ORDER BY id DESC LIMIT 1), 0) AS occupancy_pax
                 FROM buses b
                 LEFT JOIN bus_routes r ON b.current_route_id = r.id
                 LEFT JOIN bus_stops s_orig ON r.origin_stop_id = s_orig.id
                 LEFT JOIN bus_stops s_dest ON r.dest_stop_id = s_dest.id
                 ORDER BY b.bus_number ASC
             """)
-            return [dict(r) for r in cursor.fetchall()]
+            buses = [dict(r) for r in cursor.fetchall()]
+
+            for b in buses:
+                # Calculate passengers travelled
+                pax = b.get("ticket_pax", 0)
+                if pax == 0 and b.get("occupancy_pax", 0) > 0:
+                    pax = b["occupancy_pax"]
+                if pax == 0 and b.get("current_occupancy", 0) > 0:
+                    pax = b["current_occupancy"]
+                b["passengers_travelled"] = pax
+                b["occupancy"] = pax
+
+                # Calculate revenue
+                rev = b.get("ticket_revenue", 0.0)
+                if rev == 0.0 and pax > 0:
+                    rev = pax * 15.0
+                b["revenue_collected"] = rev
+
+                # Calculate load factor
+                cap = b.get("capacity") or 50
+                b["load_factor_pct"] = round((pax / cap) * 100) if cap > 0 else 0
+
+                # Performance score (0 to 100)
+                stops = b.get("stops_count") or 0
+                if b.get("current_route_id"):
+                    pax_score = min(1.0, pax / 55.0) * 40.0
+                    load_score = min(1.0, b["load_factor_pct"] / 100.0) * 30.0
+                    stops_score = min(1.0, stops / 6.0) * 30.0 if stops > 0 else 10.0
+                    score = round(pax_score + load_score + stops_score, 1)
+                else:
+                    score = 10.0
+                b["performance_score"] = score
+
+            # Assign ranks based on performance_score, passengers_travelled, stops_count
+            ranked = sorted(buses, key=lambda x: (x["performance_score"], x["passengers_travelled"], x["stops_count"]), reverse=True)
+            rank_map = {b["id"]: idx for idx, b in enumerate(ranked, start=1)}
+            for b in buses:
+                b["fleet_rank"] = rank_map.get(b["id"], len(buses))
+
+            return buses
 
     def add_bus(self, bus_number: str, bus_type: str = "City Ordinary", capacity: int = 50, current_route_id: int = None,
                 current_occupancy: int = 0, driver_name: str = "", conductor_name: str = "",
@@ -867,9 +921,20 @@ class DatabaseManager:
             conn.commit()
             return True
 
+    def assign_bus_to_route(self, bus_id: int, route_id: int):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE buses SET current_route_id = ?, bus_status = 'Active' WHERE id = ?", (int(route_id), int(bus_id)))
+            conn.commit()
+            return True
+
+
     def delete_bus(self, bus_id: int):
         with self.get_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("UPDATE timetables SET bus_id = NULL WHERE bus_id = ?", (bus_id,))
+            cursor.execute("UPDATE ticket_sales SET bus_id = NULL WHERE bus_id = ?", (bus_id,))
+            cursor.execute("UPDATE occupancy_records SET bus_id = NULL WHERE bus_id = ?", (bus_id,))
             cursor.execute("DELETE FROM buses WHERE id = ?", (bus_id,))
             conn.commit()
             return cursor.rowcount > 0

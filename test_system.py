@@ -93,9 +93,10 @@ status_dup, res_dup = post("/api/routes", new_route, token=token)
 print(f"Duplicate Route KKD-99: status={status_dup}, res={res_dup}")
 assert status_dup == 409, "Expected 409 Conflict on duplicate route ID!"
 
-print("\n--- 7. Testing Bus Registration and Assignment ---")
+import time
+bus_num = f"AP-05-Z-{int(time.time()) % 9000 + 1000}"
 new_bus = {
-    "bus_number": "AP-05-Z-9999",
+    "bus_number": bus_num,
     "bus_type": "Metro Express",
     "capacity": 55,
     "occupancy": 42,
@@ -104,14 +105,31 @@ new_bus = {
     "status": "Active",
     "departure_time": "06:00 AM",
     "arrival_time": "06:45 AM",
-    "current_route_id": res_route.get("id")
+    "current_route_id": 1
 }
 status_bus, res_bus = post("/api/buses", new_bus, token=token)
-print(f"Create Bus AP-05-Z-9999: status={status_bus}, res={res_bus}")
+print(f"Create Bus {bus_num}: status={status_bus}, res={res_bus}")
+assert status_bus == 200, f"Expected 200 on bus creation, got {status_bus}"
 new_bus_id = res_bus.get("id")
 
-print("\n--- 8. Testing Bus Unassign from Route ---")
+print("\n--- 8. Testing Bus Unassign and Re-assign ---")
 status_unassign, res_unassign = post("/api/buses/unassign", {"bus_id": new_bus_id}, token=token)
 print(f"Unassign Bus: status={status_unassign}, res={res_unassign}")
+assert status_unassign == 200, f"Expected 200 on bus unassign, got {status_unassign}"
+
+# Re-assign to route 2
+status_assign, res_assign = post("/api/buses/assign", {"bus_id": new_bus_id, "route_id": 2}, token=token)
+print(f"Re-assign Bus to route 2: status={status_assign}, res={res_assign}")
+assert status_assign == 200, f"Expected 200 on bus assign, got {status_assign}"
+
+print("\n--- 9. Testing Bus Removal (Delete Bus) ---")
+# Call delete endpoint
+req_del = urllib.request.Request(f"{BASE_URL}/api/buses/{new_bus_id}", headers={"Authorization": f"Bearer {token}"}, method="DELETE")
+with urllib.request.urlopen(req_del) as resp:
+    status_del = resp.getcode()
+    res_del = json.loads(resp.read().decode("utf-8"))
+print(f"Delete Bus {new_bus_id}: status={status_del}, res={res_del}")
+assert status_del == 200, f"Expected 200 on bus delete, got {status_del}"
 
 print("\n=== ALL SYSTEM TESTS PASSED SUCCESSFULLY! ===")
+

@@ -273,6 +273,7 @@ function updateAuthUI() {
 async function verifyExistingSession() {
     if (!authToken) {
         updateAuthUI();
+        switchView("public");
         return;
     }
     try {
@@ -281,6 +282,8 @@ async function verifyExistingSession() {
             currentUser = res.user;
             localStorage.setItem("apsrtc_user", JSON.stringify(currentUser));
             updateAuthUI();
+            // Automatically display the Admin Dashboard when authenticated!
+            switchView("admin");
         } else {
             throw new Error("Invalid session");
         }
@@ -290,6 +293,7 @@ async function verifyExistingSession() {
         localStorage.removeItem("apsrtc_token");
         localStorage.removeItem("apsrtc_user");
         updateAuthUI();
+        switchView("public");
     }
 }
 
@@ -820,7 +824,7 @@ async function executeBFSPathfinding() {
 
 function switchAdminSection(sectionName) {
     const sections = [
-        "overview", "routes", "bus-mgmt", "stops", "timings", "buses",
+        "overview", "graphs", "routes", "bus-mgmt", "stops", "timings", "buses",
         "tickets", "occupancy", "frequency", "alerts", "reports", "profile",
         "remarks", "route-condition", "project-info", "revenue"
     ];
@@ -839,7 +843,8 @@ function switchAdminSection(sectionName) {
 
     // Load dynamic data for current section
     switch (sectionName) {
-        case "overview": loadAdminOverview(); renderRouteConditionTable(); break;
+        case "overview": loadAdminOverview(); renderRouteConditionTable(); loadOverviewQuickGraphs(); break;
+        case "graphs": loadAdminGraphs(); break;
         case "routes": loadAdminRoutes(); break;
         case "bus-mgmt": loadAdminBusManagement(); break;
         case "stops": loadAdminStops(); break;
@@ -854,6 +859,7 @@ function switchAdminSection(sectionName) {
         case "remarks": loadAdminRemarks(); break;
         case "route-condition": renderRouteConditionTable(); break;
         case "revenue": loadAdminRevenue(); break;
+        case "project-info": loadProjectNotes(); break;
     }
 }
 
@@ -1437,6 +1443,7 @@ async function loadAdminBuses() {
 // --- Admin Bus Management & Allocation ---
 async function loadAdminBusManagement() {
     const grid = document.getElementById("bus-mgmt-routes-grid");
+    const reservePool = document.getElementById("bus-mgmt-reserve-pool");
     if (!grid) return;
 
     try {
@@ -1448,80 +1455,125 @@ async function loadAdminBusManagement() {
         allRoutes = routes || [];
         allBuses = buses || [];
 
+        // 1. Populate Route Cards with Assigned Buses
         if (allRoutes.length === 0) {
             grid.innerHTML = `<div class="col-span-full bg-white p-8 rounded-2xl border text-center text-slate-400">No routes registered yet.</div>`;
-            return;
+        } else {
+            grid.innerHTML = allRoutes.map(r => {
+                const assignedBuses = allBuses.filter(b => b.current_route_id === r.id);
+                const reqBuses = r.required_buses || 2;
+                const hasShortage = assignedBuses.length < reqBuses;
+
+                return `
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="bg-rose-600 text-white font-black text-sm px-2.5 py-1 rounded-xl shadow-sm">
+                                    ${r.route_number}
+                                </span>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-base">${r.route_name}</h4>
+                                    <p class="text-xs text-slate-500">${r.origin_name} ➔ ${r.dest_name}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-bold ${hasShortage ? 'text-amber-600 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200'} px-2.5 py-1 rounded-lg border">
+                                    ${assignedBuses.length} / ${reqBuses} Buses Assigned
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-bold text-slate-500 uppercase">Assigned Fleet Vehicles:</span>
+                                <button onclick="openBusModalForRoute(${r.id})" class="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1">
+                                    <i class="fa-solid fa-plus text-[10px]"></i> + Add Bus to this Route
+                                </button>
+                            </div>
+
+                            ${assignedBuses.length === 0 ? `
+                                <div class="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-slate-400">
+                                    No bus assigned to this corridor yet. Click "+ Add Bus to this Route" or allocate from Reserve Pool below.
+                                </div>
+                            ` : `
+                                <div class="space-y-2">
+                                    ${assignedBuses.map(b => `
+                                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <strong class="font-mono font-bold text-slate-900">${b.bus_number}</strong>
+                                                    <span class="text-[10px] bg-white text-slate-600 border px-1.5 py-0.5 rounded font-semibold">${b.bus_type}</span>
+                                                    <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">${b.capacity} seats</span>
+                                                </div>
+                                                <div class="text-[11px] text-slate-500 mt-1 flex flex-wrap gap-2">
+                                                    ${b.driver_name ? `<span><i class="fa-solid fa-id-card text-slate-400"></i> ${b.driver_name}</span>` : ""}
+                                                    ${b.conductor_name ? `<span>• Cond: ${b.conductor_name}</span>` : ""}
+                                                    ${b.occupancy !== undefined ? `<span>• Load: ${b.occupancy} pax</span>` : ""}
+                                                    ${b.departure_time ? `<span>• Dep: ${b.departure_time}</span>` : ""}
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                                                <button onclick="openBusModal(${b.id})" class="text-blue-600 hover:text-blue-800 text-xs font-semibold px-2 py-1 rounded bg-blue-50" title="Edit Bus Details">
+                                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                                </button>
+                                                <button onclick="handleRemoveBusFromRoute(${b.id}, '${b.bus_number}')" class="text-amber-700 hover:text-amber-900 text-xs font-bold px-2 py-1 rounded bg-amber-50 border border-amber-200 flex items-center gap-1" title="Unassign bus from route">
+                                                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Unassign
+                                                </button>
+                                                <button onclick="deleteBus(${b.id}, '${b.bus_number}')" class="text-rose-600 hover:text-rose-800 text-xs font-bold px-2 py-1 rounded bg-rose-50 border border-rose-200 flex items-center gap-1" title="Delete bus from fleet">
+                                                    <i class="fa-solid fa-trash"></i> Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join("")}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }).join("");
         }
 
-        grid.innerHTML = allRoutes.map(r => {
-            const assignedBuses = allBuses.filter(b => b.current_route_id === r.id);
-            const reqBuses = r.required_buses || 2;
-            const hasShortage = assignedBuses.length < reqBuses;
-
-            return `
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
-                    <div class="flex justify-between items-start border-b border-slate-100 pb-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="bg-rose-600 text-white font-black text-sm px-2.5 py-1 rounded-xl shadow-sm">
-                                ${r.route_number}
-                            </span>
-                            <div>
-                                <h4 class="font-bold text-slate-900 text-base">${r.route_name}</h4>
-                                <p class="text-xs text-slate-500">${r.origin_name} ➔ ${r.dest_name}</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-xs font-bold ${hasShortage ? 'text-amber-600 bg-amber-50 border-amber-200' : 'text-emerald-700 bg-emerald-50 border-emerald-200'} px-2.5 py-1 rounded-lg border">
-                                ${assignedBuses.length} / ${reqBuses} Buses Assigned
-                            </span>
-                        </div>
+        // 2. Populate Depot Reserve Pool (Unassigned Buses)
+        if (reservePool) {
+            const unassignedBuses = allBuses.filter(b => !b.current_route_id);
+            if (unassignedBuses.length === 0) {
+                reservePool.innerHTML = `
+                    <div class="col-span-full bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-slate-400">
+                        All fleet buses are currently assigned to active routes. Click "+ Register Reserve Bus" to add more vehicles.
                     </div>
-
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[11px] font-bold text-slate-500 uppercase">Assigned Fleet Vehicles:</span>
-                            <button onclick="openBusModalForRoute(${r.id})" class="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1">
-                                <i class="fa-solid fa-plus text-[10px]"></i> + Add Bus to this Route
-                            </button>
+                `;
+            } else {
+                reservePool.innerHTML = unassignedBuses.map(b => {
+                    const routeOpts = allRoutes.map(r => `<option value="${r.id}">${r.route_number}: ${r.route_name}</option>`).join("");
+                    return `
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5 text-xs">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <strong class="font-mono font-bold text-slate-900 text-sm">${b.bus_number}</strong>
+                                    <div class="text-[11px] text-slate-500">${b.bus_type} • ${b.capacity} seats</div>
+                                </div>
+                                <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Reserve Pool</span>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Allocate to Route:</label>
+                                <select onchange="handleAssignBusToRoute(${b.id}, this.value)" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-rose-500">
+                                    <option value="">-- Choose Route to Assign --</option>
+                                    ${routeOpts}
+                                </select>
+                            </div>
+                            <div class="flex justify-end gap-1.5 pt-1 border-t border-slate-200">
+                                <button onclick="openBusModal(${b.id})" class="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded bg-blue-50 font-semibold">
+                                    <i class="fa-solid fa-pen-to-square"></i> Edit
+                                </button>
+                                <button onclick="deleteBus(${b.id}, '${b.bus_number}')" class="text-rose-600 hover:text-rose-800 text-xs px-2 py-1 rounded bg-rose-50 border border-rose-200 font-bold flex items-center gap-1">
+                                    <i class="fa-solid fa-trash"></i> Delete
+                                </button>
+                            </div>
                         </div>
-
-                        ${assignedBuses.length === 0 ? `
-                            <div class="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-slate-400">
-                                No bus assigned to this corridor yet. Click "+ Add Bus to this Route" to allocate a vehicle.
-                            </div>
-                        ` : `
-                            <div class="space-y-2">
-                                ${assignedBuses.map(b => `
-                                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
-                                        <div>
-                                            <div class="flex items-center gap-2">
-                                                <strong class="font-mono font-bold text-slate-900">${b.bus_number}</strong>
-                                                <span class="text-[10px] bg-white text-slate-600 border px-1.5 py-0.5 rounded font-semibold">${b.bus_type}</span>
-                                                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">${b.capacity} seats</span>
-                                            </div>
-                                            <div class="text-[11px] text-slate-500 mt-1 flex flex-wrap gap-2">
-                                                ${b.driver_name ? `<span><i class="fa-solid fa-id-card text-slate-400"></i> ${b.driver_name}</span>` : ""}
-                                                ${b.conductor_name ? `<span>• Cond: ${b.conductor_name}</span>` : ""}
-                                                ${b.occupancy !== undefined ? `<span>• Load: ${b.occupancy} pax</span>` : ""}
-                                                ${b.departure_time ? `<span>• Dep: ${b.departure_time}</span>` : ""}
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                                            <button onclick="openBusModal(${b.id})" class="text-blue-600 hover:text-blue-800 text-xs font-semibold px-2 py-1 rounded bg-blue-50">
-                                                <i class="fa-solid fa-pen-to-square"></i> Edit
-                                            </button>
-                                            <button onclick="handleRemoveBusFromRoute(${b.id}, '${b.bus_number}')" class="text-rose-600 hover:text-rose-800 text-xs font-bold px-2.5 py-1 rounded bg-rose-50 border border-rose-200 flex items-center gap-1">
-                                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Remove Bus
-                                            </button>
-                                        </div>
-                                    </div>
-                                `).join("")}
-                            </div>
-                        `}
-                    </div>
-                </div>
-            `;
-        }).join("");
+                    `;
+                }).join("");
+            }
+        }
     } catch (e) {
         console.error("Failed to load bus management:", e);
     }
@@ -1640,11 +1692,40 @@ async function handleSaveBus(event) {
     }
 }
 
-function deleteBus(id) {
-    showConfirm("Deregister Bus", "Are you sure you want to remove this bus from the fleet?", async () => {
+async function handleAssignBusToRoute(busId, routeId) {
+    if (!routeId) return;
+    try {
+        const bus = allBuses.find(b => b.id === busId);
+        if (!bus) return;
+        await apiCall("/api/buses", "PUT", {
+            id: busId,
+            bus_number: bus.bus_number,
+            bus_type: bus.bus_type,
+            capacity: bus.capacity,
+            current_route_id: parseInt(routeId),
+            driver_name: bus.driver_name || "",
+            conductor_name: bus.conductor_name || "",
+            status: "Active",
+            departure_time: bus.departure_time || "06:30 AM",
+            arrival_time: bus.arrival_time || "07:15 AM",
+            occupancy: bus.occupancy || 30
+        });
+        showToast(`Bus ${bus.bus_number} assigned to route successfully.`, "success");
+        await loadAdminBusManagement();
+        await loadAdminBuses();
+        await loadAdminOverview();
+        await renderRouteConditionTable();
+        await loadPublicData();
+    } catch (e) {
+        showToast("Error assigning bus: " + e.message, "error");
+    }
+}
+
+function deleteBus(id, busNumber = "") {
+    showConfirm("Deregister Fleet Bus", `Are you sure you want to permanently remove and deregister bus ${busNumber || "from the fleet"}? This will remove the vehicle from all timetables, assignments, and capacity tracking.`, async () => {
         try {
             await apiCall(`/api/buses?id=${id}`, "DELETE");
-            showToast("Bus deregistered.", "success");
+            showToast(`Bus ${busNumber || ""} removed from fleet successfully.`, "success");
             await loadAdminBuses();
             await loadAdminBusManagement();
             await loadAdminOverview();
@@ -2608,3 +2689,927 @@ document.addEventListener("DOMContentLoaded", async () => {
     await verifyExistingSession();
     await loadPublicData();
 });
+
+// --- Project Preparation & Architecture Defense Notes ---
+const DEFAULT_PROJECT_NOTES = `APSRTC Kakinada City Transit & Route Optimizer
+Academic Viva & Architectural Defense Notes:
+1. Problem Statement: Municipal bus operators struggle with headway bunching and commuter overcrowding due to lack of synchronized spatial graph data and passenger ETM telemetry.
+2. Relational Schema (DBMS): 10 relational tables (bus_stops, bus_routes, route_stops, buses, timetables, ticket_sales, occupancy_records, service_alerts, feedback, admin_users) normalized in 3NF with cascading referential integrity and foreign keys.
+3. Network Graph Formulation (DMGT): Transit network formalized as a directed multigraph G = (V, E) where vertices V represent 18 bus stops and edges E represent operational corridor segments.
+4. Shortest Path Traversal (ADSA): Implements Breadth-First Search (BFS) in O(V + E) time with a FIFO queue to discover optimal unweighted transfer paths between any two stops.
+5. Dynamic Fleet Capacity Algorithm: Computes ratio = (passenger_demand / fleet_capacity). If ratio >= 90%, system triggers extra bus requirement flag (+ceil((demand - capacity) / 50) buses).
+6. Cryptographic Security: Passwords salted with 16-byte cryptographically secure random bytes and hashed using PBKDF2-HMAC-SHA256 with 100,000 iterations.
+7. Prepared for: Computer Science & Engineering Academic Defense & Viva Presentation (2026).`;
+
+function loadProjectNotes() {
+    const input = document.getElementById("project-preparation-notes-input");
+    if (!input) return;
+    const saved = localStorage.getItem("apsrtc_project_notes");
+    input.value = saved || DEFAULT_PROJECT_NOTES;
+}
+
+function saveProjectNotes() {
+    const input = document.getElementById("project-preparation-notes-input");
+    if (!input) return;
+    const notes = input.value.trim();
+    localStorage.setItem("apsrtc_project_notes", notes);
+    showToast("Project preparation notes saved successfully to your session.", "success");
+}
+
+function resetProjectNotesToDefault() {
+    const input = document.getElementById("project-preparation-notes-input");
+    if (!input) return;
+    input.value = DEFAULT_PROJECT_NOTES;
+    localStorage.setItem("apsrtc_project_notes", DEFAULT_PROJECT_NOTES);
+    showToast("Default project defense notes restored.", "info");
+}
+
+
+// ==============================================================
+// ============= GRAPHS & VISUAL ANALYTICS DASHBOARD ============
+// ==============================================================
+
+window.transitChartInstances = window.transitChartInstances || {};
+
+function safeCreateChart(canvasId, config) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return null;
+
+    if (window.transitChartInstances[canvasId]) {
+        try {
+            window.transitChartInstances[canvasId].destroy();
+        } catch (e) {
+            console.warn("Failed to destroy existing chart on " + canvasId, e);
+        }
+    }
+
+    if (typeof Chart === "undefined") {
+        console.warn("Chart.js library is not yet loaded.");
+        return null;
+    }
+
+    try {
+        const ctx = canvas.getContext("2d");
+        const chart = new Chart(ctx, config);
+        window.transitChartInstances[canvasId] = chart;
+        return chart;
+    } catch (err) {
+        console.error("Error creating chart on " + canvasId, err);
+        return null;
+    }
+}
+
+// --- Category Filtering (All Graphs vs Bus Fleet vs Route Corridors) ---
+function filterGraphsCategory(category) {
+    const btnAll = document.getElementById("btn-graph-filter-all");
+    const btnBuses = document.getElementById("btn-graph-filter-buses");
+    const btnRoutes = document.getElementById("btn-graph-filter-routes");
+    const secBuses = document.getElementById("graphs-sec-buses");
+    const secRoutes = document.getElementById("graphs-sec-routes");
+    const kpiBuses = document.getElementById("graphs-buses-kpi");
+
+    [btnAll, btnBuses, btnRoutes].forEach(b => {
+        if (b) {
+            b.classList.remove("active", "bg-rose-600", "text-white");
+            b.classList.add("bg-slate-800", "text-slate-300");
+        }
+    });
+
+    if (category === "buses") {
+        if (btnBuses) {
+            btnBuses.classList.add("active", "bg-rose-600", "text-white");
+            btnBuses.classList.remove("bg-slate-800", "text-slate-300");
+        }
+        if (secBuses) secBuses.classList.remove("hidden");
+        if (kpiBuses) kpiBuses.classList.remove("hidden");
+        if (secRoutes) secRoutes.classList.add("hidden");
+    } else if (category === "routes") {
+        if (btnRoutes) {
+            btnRoutes.classList.add("active", "bg-rose-600", "text-white");
+            btnRoutes.classList.remove("bg-slate-800", "text-slate-300");
+        }
+        if (secBuses) secBuses.classList.add("hidden");
+        if (kpiBuses) kpiBuses.classList.add("hidden");
+        if (secRoutes) secRoutes.classList.remove("hidden");
+    } else {
+        if (btnAll) {
+            btnAll.classList.add("active", "bg-rose-600", "text-white");
+            btnAll.classList.remove("bg-slate-800", "text-slate-300");
+        }
+        if (secBuses) secBuses.classList.remove("hidden");
+        if (kpiBuses) kpiBuses.classList.remove("hidden");
+        if (secRoutes) secRoutes.classList.remove("hidden");
+    }
+}
+
+// --- Quick Charts in Admin Overview Dashboard ---
+async function loadOverviewQuickGraphs() {
+    try {
+        const [routes, buses] = await Promise.all([
+            apiCall("/api/routes"),
+            apiCall("/api/buses")
+        ]);
+
+        if (!routes || !buses) return;
+
+        // Chart A: Route Demand vs Revenue Yield
+        const routeLabels = routes.map(r => r.route_number);
+        const routeDemand = routes.map(r => r.passengers || (r.route_number === "KKD-02" ? 48 : (r.route_number === "KKD-01" ? 34 : 20)));
+        const routeRevenue = routes.map(r => r.revenue || (r.passengers || 20) * 15);
+
+        safeCreateChart("overview-chart-route-demand", {
+            type: "bar",
+            data: {
+                labels: routeLabels,
+                datasets: [
+                    {
+                        label: "Passenger Demand",
+                        data: routeDemand,
+                        backgroundColor: "rgba(225, 29, 72, 0.8)",
+                        borderColor: "#e11d48",
+                        borderWidth: 1,
+                        borderRadius: 6
+                    },
+                    {
+                        label: "Revenue (₹)",
+                        data: routeRevenue,
+                        backgroundColor: "rgba(99, 102, 241, 0.7)",
+                        borderColor: "#6366f1",
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "top", labels: { font: { size: 10, weight: "bold" }, boxWidth: 12 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                if (ctx.datasetIndex === 1) return ` Revenue: ₹${ctx.raw.toLocaleString()}`;
+                                return ` Demand: ${ctx.raw} passengers`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 9, weight: "bold" } } },
+                    y: { grid: { color: "rgba(226, 232, 240, 0.6)" }, ticks: { font: { size: 9 } } }
+                }
+            }
+        });
+
+        // Chart B: Bus Fleet Deployment vs Reserve Pool
+        const activeBuses = buses.filter(b => b.current_route_id).length;
+        const reserveBuses = buses.length - activeBuses;
+
+        safeCreateChart("overview-chart-bus-fleet", {
+            type: "doughnut",
+            data: {
+                labels: ["Active on Corridors", "Depot Standby Reserve"],
+                datasets: [{
+                    data: [activeBuses, reserveBuses],
+                    backgroundColor: ["#10b981", "#f59e0b"],
+                    borderWidth: 2,
+                    borderColor: "#ffffff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "bottom", labels: { font: { size: 11, weight: "bold" }, boxWidth: 14 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const total = activeBuses + reserveBuses;
+                                const pct = total > 0 ? Math.round((ctx.raw / total) * 100) : 0;
+                                return ` ${ctx.label}: ${ctx.raw} vehicles (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: "68%"
+            }
+        });
+
+    } catch (e) {
+        console.error("Failed to render overview quick charts:", e);
+    }
+}
+
+// --- Main Graphs & Visual Analytics Dashboard Loader ---
+async function loadAdminGraphs() {
+    try {
+        const [routes, buses, overview, conditions] = await Promise.all([
+            apiCall("/api/routes"),
+            apiCall("/api/buses"),
+            apiCall("/api/overview"),
+            apiCall("/api/route-conditions")
+        ]);
+
+        if (!routes || !buses) return;
+
+        // 1. Overall Bus Fleet KPIs
+        const totalBuses = buses.length;
+        const totalSeats = buses.reduce((acc, b) => acc + (parseInt(b.capacity) || 50), 0);
+        const activeBuses = buses.filter(b => b.current_route_id);
+        const reserveBuses = buses.filter(b => !b.current_route_id);
+        const activeRate = totalBuses > 0 ? Math.round((activeBuses.length / totalBuses) * 100) : 0;
+
+        const kpiTotalEl = document.getElementById("graph-kpi-total-buses");
+        const kpiSeatsEl = document.getElementById("graph-kpi-total-seats");
+        const kpiActiveEl = document.getElementById("graph-kpi-active-rate");
+        const kpiReserveEl = document.getElementById("graph-kpi-reserve-buses");
+        const kpiActiveSub = document.getElementById("graph-kpi-active-buses-sub");
+
+        if (kpiTotalEl) kpiTotalEl.innerText = totalBuses;
+        if (kpiSeatsEl) kpiSeatsEl.innerText = totalSeats.toLocaleString();
+        if (kpiActiveEl) kpiActiveEl.innerText = `${activeRate}%`;
+        if (kpiReserveEl) kpiReserveEl.innerText = reserveBuses.length;
+        if (kpiActiveSub) kpiActiveSub.innerText = `${activeBuses.length} of ${totalBuses} Assigned to Routes`;
+
+        // 2. Bus Fleet Graph 1: Distribution by Bus Type (Doughnut)
+        const typeCounts = {};
+        buses.forEach(b => {
+            const t = b.bus_type || "City Ordinary";
+            typeCounts[t] = (typeCounts[t] || 0) + 1;
+        });
+
+        safeCreateChart("chart-bus-types", {
+            type: "doughnut",
+            data: {
+                labels: Object.keys(typeCounts),
+                datasets: [{
+                    data: Object.values(typeCounts),
+                    backgroundColor: [
+                        "#e11d48", // Rose (City Ordinary)
+                        "#6366f1", // Indigo (Metro Express)
+                        "#10b981", // Emerald (Palle Velugu)
+                        "#f59e0b", // Amber (Electric AC)
+                        "#8b5cf6"  // Purple
+                    ],
+                    borderWidth: 2,
+                    borderColor: "#ffffff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "right", labels: { font: { size: 11, weight: "bold" }, boxWidth: 14 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const total = buses.length;
+                                const pct = total > 0 ? Math.round((ctx.raw / total) * 100) : 0;
+                                return ` ${ctx.label}: ${ctx.raw} buses (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: "60%"
+            }
+        });
+
+        // 3. Bus Fleet Graph 2: Deployment & Operational Status (Doughnut)
+        safeCreateChart("chart-bus-status", {
+            type: "doughnut",
+            data: {
+                labels: ["In Service (Assigned)", "Depot Standby Reserve", "Under Maintenance"],
+                datasets: [{
+                    data: [
+                        activeBuses.length,
+                        reserveBuses.filter(b => (b.bus_status || b.status || "").toLowerCase() !== "maintenance").length,
+                        buses.filter(b => (b.bus_status || b.status || "").toLowerCase() === "maintenance").length
+                    ],
+                    backgroundColor: ["#10b981", "#f59e0b", "#94a3b8"],
+                    borderWidth: 2,
+                    borderColor: "#ffffff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "right", labels: { font: { size: 11, weight: "bold" }, boxWidth: 14 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const total = buses.length;
+                                const pct = total > 0 ? Math.round((ctx.raw / total) * 100) : 0;
+                                return ` ${ctx.label}: ${ctx.raw} vehicles (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: "60%"
+            }
+        });
+
+        // 4. Bus Fleet Graph 3: Individual Bus Occupancy vs Seating Capacity (Bar)
+        const busLabels = buses.map(b => b.bus_number);
+        const busOccupancy = buses.map(b => parseInt(b.occupancy !== undefined ? b.occupancy : 30));
+        const busCapacities = buses.map(b => parseInt(b.capacity || 50));
+
+        safeCreateChart("chart-bus-occupancy", {
+            type: "bar",
+            data: {
+                labels: busLabels,
+                datasets: [
+                    {
+                        label: "Current Passenger Load",
+                        data: busOccupancy,
+                        backgroundColor: busOccupancy.map((occ, i) => {
+                            const ratio = occ / busCapacities[i];
+                            if (ratio >= 0.85) return "#e11d48"; // Critical / Overcrowded
+                            if (ratio >= 0.60) return "#f59e0b"; // Busy
+                            return "#10b981"; // Normal
+                        }),
+                        borderRadius: 6
+                    },
+                    {
+                        label: "Seating Capacity",
+                        data: busCapacities,
+                        backgroundColor: "rgba(148, 163, 184, 0.4)",
+                        borderColor: "#94a3b8",
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "top", labels: { font: { size: 11, weight: "bold" }, boxWidth: 14 } },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(ctx) {
+                                const idx = ctx.dataIndex;
+                                const occ = busOccupancy[idx];
+                                const cap = busCapacities[idx];
+                                const pct = Math.round((occ / cap) * 100);
+                                return `Occupancy Ratio: ${pct}% (${occ}/${cap} seats)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" } } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "rgba(226, 232, 240, 0.6)" },
+                        title: { display: true, text: "Commuters / Seat Count", font: { size: 11, weight: "bold" } }
+                    }
+                }
+            }
+        });
+
+
+        // --- 4B. User Requested: Number of Passengers Travelled per Bus ---
+        const busesSortedByPax = [...buses].sort((a, b) => (b.passengers_travelled || 0) - (a.passengers_travelled || 0));
+        safeCreateChart("chart-bus-passengers-travelled", {
+            type: "bar",
+            data: {
+                labels: busesSortedByPax.map(b => `${b.bus_number}${b.route_number ? ' (' + b.route_number + ')' : ''}`),
+                datasets: [{
+                    label: "Passengers Travelled",
+                    data: busesSortedByPax.map(b => b.passengers_travelled || 0),
+                    backgroundColor: busesSortedByPax.map((b, i) => {
+                        if (i === 0) return "#e11d48"; // Highest volume
+                        if (i <= 2) return "#f43f5e";
+                        if (b.current_route_id) return "#fb7185";
+                        return "#cbd5e1"; // Standby
+                    }),
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => {
+                                const b = busesSortedByPax[ctx[0].dataIndex];
+                                return `${b.bus_number} - ${b.route_name || 'Standby Reserve'}`;
+                            },
+                            label: (ctx) => {
+                                const b = busesSortedByPax[ctx.dataIndex];
+                                return ` Passengers Travelled: ${ctx.raw} commuters | Cap: ${b.capacity} seats (${b.load_factor_pct || 0}% load)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" } } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "rgba(226, 232, 240, 0.6)" },
+                        title: { display: true, text: "Commuters Travelled", font: { size: 11, weight: "bold" } }
+                    }
+                }
+            }
+        });
+
+        // --- 4C. User Requested: Bus Stops Traversed Along Route Corridor ---
+        const busesSortedByStops = [...buses].sort((a, b) => (b.stops_count || 0) - (a.stops_count || 0));
+        safeCreateChart("chart-bus-stops-traversed", {
+            type: "bar",
+            data: {
+                labels: busesSortedByStops.map(b => `${b.bus_number}${b.route_number ? ' (' + b.route_number + ')' : ''}`),
+                datasets: [{
+                    label: "Bus Stops Traversed",
+                    data: busesSortedByStops.map(b => b.stops_count || 0),
+                    backgroundColor: busesSortedByStops.map(b => b.stops_count > 0 ? "rgba(99, 102, 241, 0.85)" : "#cbd5e1"),
+                    borderColor: busesSortedByStops.map(b => b.stops_count > 0 ? "#6366f1" : "#94a3b8"),
+                    borderWidth: 1.5,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => {
+                                const b = busesSortedByStops[ctx[0].dataIndex];
+                                return `${b.bus_number} - ${b.route_number || 'Standby'}: ${b.route_name || 'No Route'}`;
+                            },
+                            label: (ctx) => ` Bus Stops Visited & Serviced: ${ctx.raw} stops along corridor`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" } } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: { color: "rgba(226, 232, 240, 0.6)" },
+                        title: { display: true, text: "Sequential Corridor Stops", font: { size: 11, weight: "bold" } }
+                    }
+                }
+            }
+        });
+
+        // --- 4D. User Requested: Total Bus Fleet Ranking & Performance Index ---
+        const rankedBuses = [...buses].sort((a, b) => (a.fleet_rank || 99) - (b.fleet_rank || 99));
+
+        safeCreateChart("chart-bus-fleet-ranks", {
+            type: "bar",
+            data: {
+                labels: rankedBuses.map(b => `Rank #${b.fleet_rank || '-'} ${b.bus_number}`),
+                datasets: [{
+                    label: "Fleet Performance Score (0 - 100)",
+                    data: rankedBuses.map(b => b.performance_score || 10.0),
+                    backgroundColor: rankedBuses.map(b => {
+                        if (b.fleet_rank === 1) return "#eab308"; // Gold
+                        if (b.fleet_rank === 2) return "#94a3b8"; // Silver
+                        if (b.fleet_rank === 3) return "#d97706"; // Bronze
+                        if (b.current_route_id) return "#6366f1"; // Standard Active
+                        return "#475569"; // Standby
+                    }),
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => {
+                                const b = rankedBuses[ctx[0].dataIndex];
+                                return `Rank #${b.fleet_rank}: ${b.bus_number} (${b.route_number || 'Standby'})`;
+                            },
+                            label: (ctx) => {
+                                const b = rankedBuses[ctx.dataIndex];
+                                return ` Score: ${ctx.raw} pts | ${b.passengers_travelled || 0} pax | ${b.stops_count || 0} stops | ${b.load_factor_pct || 0}% load`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: "rgba(51, 65, 85, 0.5)" },
+                        ticks: { color: "#94a3b8", callback: (v) => v + " pts" },
+                        title: { display: true, text: "Composite Performance Points (Pax 40% + Load 30% + Stops 30%)", color: "#cbd5e1" }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: "#e2e8f0", font: { weight: "bold", size: 10 } }
+                    }
+                }
+            }
+        });
+
+        // --- 4E. Render Top 3 Fleet Podium Cards ---
+        const podiumEl = document.getElementById("bus-fleet-podium");
+        if (podiumEl) {
+            const top3 = rankedBuses.slice(0, 3);
+            const podiumConfigs = [
+                {
+                    rankText: "1ST PLACE - FLEET CHAMPION",
+                    medal: "🥇",
+                    border: "border-amber-400/60 bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-950",
+                    badge: "bg-amber-400/20 text-amber-300 border-amber-400/40",
+                    iconColor: "text-amber-400"
+                },
+                {
+                    rankText: "2ND PLACE - HIGH UTILIZATION",
+                    medal: "🥈",
+                    border: "border-slate-400/60 bg-gradient-to-br from-slate-800/40 via-slate-900 to-slate-950",
+                    badge: "bg-slate-400/20 text-slate-200 border-slate-400/40",
+                    iconColor: "text-slate-300"
+                },
+                {
+                    rankText: "3RD PLACE - STEADY CORRIDOR",
+                    medal: "🥉",
+                    border: "border-amber-600/60 bg-gradient-to-br from-amber-950/30 via-slate-900 to-slate-950",
+                    badge: "bg-amber-600/20 text-amber-200 border-amber-600/40",
+                    iconColor: "text-amber-500"
+                }
+            ];
+
+            podiumEl.innerHTML = top3.map((b, idx) => {
+                const cfg = podiumConfigs[idx] || podiumConfigs[0];
+                return `
+                    <div class="p-5 rounded-2xl border ${cfg.border} shadow-lg space-y-3 relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black px-2.5 py-0.5 rounded-full border ${cfg.badge}">
+                                ${cfg.medal} Rank #${b.fleet_rank}
+                            </span>
+                            <span class="text-xs font-mono font-bold text-amber-300">${b.performance_score || 0} pts</span>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-black text-white flex items-center gap-2">
+                                <i class="fa-solid fa-bus ${cfg.iconColor}"></i> ${b.bus_number}
+                            </h4>
+                            <p class="text-xs text-slate-400">${b.route_number ? b.route_number + ': ' + b.route_name : 'Depot Standby'}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-xs">
+                            <div class="bg-slate-950/60 p-2 rounded-xl">
+                                <span class="text-[10px] text-slate-400 block uppercase">Passengers</span>
+                                <span class="font-black text-rose-400 text-sm">${b.passengers_travelled || 0} pax</span>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded-xl">
+                                <span class="text-[10px] text-slate-400 block uppercase">Stops Covered</span>
+                                <span class="font-black text-indigo-400 text-sm">${b.stops_count || 0} stops</span>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded-xl">
+                                <span class="text-[10px] text-slate-400 block uppercase">Load Factor</span>
+                                <span class="font-black text-emerald-400 text-sm">${b.load_factor_pct || 0}%</span>
+                            </div>
+                            <div class="bg-slate-950/60 p-2 rounded-xl">
+                                <span class="text-[10px] text-slate-400 block uppercase">Revenue Yield</span>
+                                <span class="font-black text-amber-400 text-sm">₹${(b.revenue_collected || 0).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // --- 4F. Render Full Bus Fleet Ranking Table ---
+        const rankTbody = document.getElementById("graph-bus-ranking-tbody");
+        if (rankTbody) {
+            rankTbody.innerHTML = rankedBuses.map(b => {
+                let medalBadge = `<span class="font-mono font-bold text-slate-400">#${b.fleet_rank}</span>`;
+                if (b.fleet_rank === 1) medalBadge = `<span class="text-base" title="Gold Rank 1">🥇</span> <span class="font-black text-amber-400">#1</span>`;
+                else if (b.fleet_rank === 2) medalBadge = `<span class="text-base" title="Silver Rank 2">🥈</span> <span class="font-black text-slate-300">#2</span>`;
+                else if (b.fleet_rank === 3) medalBadge = `<span class="text-base" title="Bronze Rank 3">🥉</span> <span class="font-black text-amber-600">#3</span>`;
+
+                const loadPct = b.load_factor_pct || 0;
+                let loadBadge = "bg-emerald-500/20 text-emerald-300";
+                if (loadPct >= 85) loadBadge = "bg-rose-500/20 text-rose-300";
+                else if (loadPct >= 60) loadBadge = "bg-amber-500/20 text-amber-300";
+
+                return `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="p-3.5 text-center whitespace-nowrap">${medalBadge}</td>
+                        <td class="p-3.5 font-bold font-mono text-white">
+                            ${b.bus_number}
+                            <span class="text-[10px] block text-slate-400 font-sans font-normal">${b.bus_type || "Ordinary"}</span>
+                        </td>
+                        <td class="p-3.5">
+                            ${b.route_number 
+                                ? `<span class="font-bold text-rose-400">${b.route_number}</span> <span class="text-slate-400 text-xs block truncate max-w-[150px]">${b.route_name}</span>`
+                                : `<span class="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[10px] font-bold">Reserve Pool</span>`}
+                        </td>
+                        <td class="p-3.5 text-center font-black text-rose-400 font-mono text-sm">${b.passengers_travelled || 0}</td>
+                        <td class="p-3.5 text-center font-black text-indigo-400 font-mono text-sm">${b.stops_count || 0}</td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2 py-0.5 rounded text-xs font-mono font-bold ${loadBadge}">
+                                ${loadPct}%
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-right font-mono font-bold text-emerald-400">₹${(b.revenue_collected || 0).toLocaleString()}</td>
+                        <td class="p-3.5 text-center">
+                            <span class="px-2.5 py-1 rounded-lg bg-amber-400/10 text-amber-300 font-mono font-black border border-amber-400/20">
+                                ${b.performance_score || 0} pts
+                            </span>
+                        </td>
+                        <td class="p-3.5 text-right">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${b.current_route_id ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-700 text-slate-300'}">
+                                ${b.current_route_id ? 'In Service' : 'Standby'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+
+        // 5. Populate Bus Fleet Telemetry Table
+        const busTbody = document.getElementById("graph-bus-telemetry-tbody");
+        if (busTbody) {
+            busTbody.innerHTML = buses.map(b => {
+                const cap = parseInt(b.capacity || 50);
+                const occ = parseInt(b.occupancy !== undefined ? b.occupancy : 30);
+                const ratio = Math.round((occ / cap) * 100);
+                let badgeClass = "bg-emerald-100 text-emerald-800";
+                if (ratio >= 85) badgeClass = "bg-rose-100 text-rose-800 animate-pulse";
+                else if (ratio >= 60) badgeClass = "bg-amber-100 text-amber-800";
+
+                const assignedRoute = b.route_number 
+                    ? `<span class="font-bold text-rose-600 font-mono">${b.route_number}</span> <span class="text-slate-500 text-[11px] block truncate max-w-[140px]">${b.route_name || ""}</span>` 
+                    : `<span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200">Reserve Pool</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-bold font-mono text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bus text-slate-400"></i> ${b.bus_number}
+                        </td>
+                        <td class="p-3 font-semibold text-slate-600">${b.bus_type || "City Ordinary"}</td>
+                        <td class="p-3">${assignedRoute}</td>
+                        <td class="p-3 text-center font-mono font-bold text-slate-700">${cap}</td>
+                        <td class="p-3 text-center font-mono font-black ${ratio >= 85 ? 'text-rose-600' : 'text-slate-800'}">${occ}</td>
+                        <td class="p-3 text-center">
+                            <span class="${badgeClass} text-[11px] font-black px-2 py-0.5 rounded-full font-mono">${ratio}%</span>
+                        </td>
+                        <td class="p-3 text-slate-600 text-[11px]">
+                            ${b.driver_name || "Unassigned"} / ${b.conductor_name || "Unassigned"}
+                        </td>
+                        <td class="p-3 text-right">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${b.current_route_id ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'}">
+                                ${b.current_route_id ? 'In Service' : 'Standby'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        // ================= ROUTE CORRIDOR GRAPHS =================
+        const rLabels = routes.map(r => r.route_number);
+        const rNames = routes.map(r => r.route_name);
+        const rPax = routes.map(r => r.passengers || (r.route_number === "KKD-02" ? 48 : (r.route_number === "KKD-01" ? 34 : 20)));
+        const rRev = routes.map(r => r.revenue || (r.passengers || 20) * 15);
+        const rDist = routes.map(r => parseFloat(r.distance_km || 12.0));
+        const rTime = routes.map(r => parseInt(r.travel_time_mins || 30));
+
+        // Route Graph 4: Passenger Ridership Demand (Bar)
+        safeCreateChart("chart-route-demand", {
+            type: "bar",
+            data: {
+                labels: rLabels,
+                datasets: [{
+                    label: "Passenger Ridership Demand",
+                    data: rPax,
+                    backgroundColor: [
+                        "rgba(225, 29, 72, 0.85)",
+                        "rgba(99, 102, 241, 0.85)",
+                        "rgba(16, 185, 129, 0.85)",
+                        "rgba(245, 158, 11, 0.85)",
+                        "rgba(139, 92, 246, 0.85)",
+                        "rgba(6, 182, 212, 0.85)",
+                        "rgba(236, 72, 153, 0.85)",
+                        "rgba(59, 130, 246, 0.85)"
+                    ],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => `${ctx[0].label}: ${rNames[ctx[0].dataIndex]}`,
+                            label: (ctx) => ` Commuters Served: ${ctx.raw} passengers`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" } } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "rgba(226, 232, 240, 0.6)" },
+                        title: { display: true, text: "Verified Commuters", font: { size: 11, weight: "bold" } }
+                    }
+                }
+            }
+        });
+
+        // Route Graph 5: Fare Revenue Collection (Bar)
+        safeCreateChart("chart-route-revenue", {
+            type: "bar",
+            data: {
+                labels: rLabels,
+                datasets: [{
+                    label: "Fare Revenue (₹ INR)",
+                    data: rRev,
+                    backgroundColor: "rgba(16, 185, 129, 0.85)",
+                    borderColor: "#10b981",
+                    borderWidth: 1.5,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => `${ctx[0].label}: ${rNames[ctx[0].dataIndex]}`,
+                            label: (ctx) => ` Revenue Collected: ₹${ctx.raw.toLocaleString()}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" } } },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: "rgba(226, 232, 240, 0.6)" },
+                        ticks: { callback: (v) => "₹" + v },
+                        title: { display: true, text: "Fare Collected (₹)", font: { size: 11, weight: "bold" } }
+                    }
+                }
+            }
+        });
+
+        // Route Graph 6: Route Congestion Index & 85% Overload Threshold (Horizontal Bar)
+        const condMap = {};
+        if (conditions && Array.isArray(conditions)) {
+            conditions.forEach(c => { condMap[c.route_number] = c; });
+        }
+
+        const rOccRatios = routes.map(r => {
+            const cond = condMap[r.route_number];
+            if (cond) return Math.round((cond.occupancy_ratio || 0.5) * 100);
+            return Math.min(100, Math.round(((r.passengers || 20) / (r.capacity || 50)) * 100));
+        });
+
+        safeCreateChart("chart-route-congestion", {
+            type: "bar",
+            data: {
+                labels: routes.map(r => `${r.route_number}: ${r.route_name}`),
+                datasets: [{
+                    label: "Congestion Load Factor (%)",
+                    data: rOccRatios,
+                    backgroundColor: rOccRatios.map(ratio => {
+                        if (ratio >= 85) return "#e11d48"; // Critical / Overcrowded (>85%)
+                        if (ratio >= 60) return "#f59e0b"; // Heavy Load (60-84%)
+                        return "#10b981"; // Normal Flow (<60%)
+                    }),
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const val = ctx.raw;
+                                const status = val >= 85 ? "CRITICAL: Extra Bus Mandated" : (val >= 60 ? "MODERATE: Monitor Headways" : "OPTIMAL: Normal Seating");
+                                return ` Load Factor: ${val}% - ${status}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        min: 0,
+                        max: 100,
+                        grid: { color: "rgba(226, 232, 240, 0.6)" },
+                        ticks: { callback: (v) => v + "%" },
+                        title: { display: true, text: "Load Factor % (Red indicates >= 85% Overcrowded Threshold)", font: { size: 11, weight: "bold" } }
+                    },
+                    y: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" } } }
+                }
+            }
+        });
+
+        // Route Graph 7: Corridor Distance vs Travel Duration (Dual Bar)
+        safeCreateChart("chart-route-distance-time", {
+            type: "bar",
+            data: {
+                labels: rLabels,
+                datasets: [
+                    {
+                        label: "Distance (km)",
+                        data: rDist,
+                        backgroundColor: "rgba(99, 102, 241, 0.8)",
+                        borderRadius: 6
+                    },
+                    {
+                        label: "Travel Time (mins)",
+                        data: rTime,
+                        backgroundColor: "rgba(245, 158, 11, 0.8)",
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "top", labels: { font: { size: 10, weight: "bold" }, boxWidth: 12 } },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => `${ctx[0].label}: ${rNames[ctx[0].dataIndex]}`,
+                            label: (ctx) => ctx.datasetIndex === 0 ? ` Distance: ${ctx.raw} km` : ` Travel Time: ${ctx.raw} mins`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" } } },
+                    y: { beginAtZero: true, grid: { color: "rgba(226, 232, 240, 0.6)" } }
+                }
+            }
+        });
+
+        // Route Graph 8: Assigned Fleet vs Extra Buses Recommended (Grouped Bar)
+        const assignedFleet = routes.map(r => {
+            const cond = condMap[r.route_number];
+            return cond ? cond.assigned_buses : (r.assigned_buses || 1);
+        });
+
+        const extraFleet = routes.map(r => {
+            const cond = condMap[r.route_number];
+            return cond ? (cond.extra_bus_required ? cond.buses_needed : 0) : 1;
+        });
+
+        safeCreateChart("chart-route-buses", {
+            type: "bar",
+            data: {
+                labels: rLabels,
+                datasets: [
+                    {
+                        label: "Current Assigned Buses",
+                        data: assignedFleet,
+                        backgroundColor: "#10b981",
+                        borderRadius: 6
+                    },
+                    {
+                        label: "Extra Buses Recommended (+N)",
+                        data: extraFleet,
+                        backgroundColor: "#e11d48",
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: "top", labels: { font: { size: 10, weight: "bold" }, boxWidth: 12 } },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => `${ctx[0].label}: ${rNames[ctx[0].dataIndex]}`,
+                            afterLabel: (ctx) => ctx.datasetIndex === 1 && ctx.raw > 0 ? "⚠️ Overload Triggered: Additional fleet deployment required" : ""
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: "bold" } } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 },
+                        grid: { color: "rgba(226, 232, 240, 0.6)" },
+                        title: { display: true, text: "Vehicle Fleet Count", font: { size: 11, weight: "bold" } }
+                    }
+                }
+            }
+        });
+
+    } catch (e) {
+        console.error("Failed to render Graphs Dashboard:", e);
+    }
+}

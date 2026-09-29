@@ -270,7 +270,7 @@ class TransitRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         # Protected Admin Endpoints Below
-        if path in ["/api/stops", "/api/routes", "/api/timings", "/api/buses", "/api/buses/unassign", "/api/alerts", "/api/data/import-csv"] and not user:
+        if path in ["/api/stops", "/api/routes", "/api/timings", "/api/buses", "/api/buses/unassign", "/api/buses/assign", "/api/alerts", "/api/data/import-csv"] and not user:
             self.send_json({"error": "Unauthorized. Please log in as an administrator."}, status=401)
             return
 
@@ -384,13 +384,24 @@ class TransitRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/buses/unassign":
-            bus_id = int(body.get("bus_id", 0))
+            bus_id = int(body.get("bus_id") or 0)
             if not bus_id:
                 self.send_json({"error": "Bus ID is required."}, status=400)
                 return
             db_manager.remove_bus_from_route(bus_id)
             db_manager.log_action(user["id"], user["username"], "UNASSIGN_BUS", f"Unassigned bus ID {bus_id} from route")
             self.send_json({"success": True, "message": "Bus unassigned from route successfully."})
+            return
+
+        elif path == "/api/buses/assign":
+            bus_id = int(body.get("bus_id") or 0)
+            route_id = int(body.get("route_id") or 0)
+            if not bus_id or not route_id:
+                self.send_json({"error": "bus_id and route_id are required."}, status=400)
+                return
+            db_manager.assign_bus_to_route(bus_id, route_id)
+            db_manager.log_action(user["id"], user["username"], "ASSIGN_BUS", f"Assigned bus ID {bus_id} to route {route_id}")
+            self.send_json({"success": True, "message": "Bus assigned to route successfully."})
             return
 
         elif path == "/api/tickets":
@@ -617,6 +628,14 @@ class TransitRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             item_id = int(query.get("id", [0])[0])
+            if not item_id and len(path.strip("/").split("/")) > 2:
+                try:
+                    parts = path.strip("/").split("/")
+                    item_id = int(parts[-1])
+                    path = "/" + "/".join(parts[:-1])
+                except (ValueError, IndexError):
+                    pass
+
             if not item_id:
                 self.send_json({"error": "Parameter 'id' is required."}, status=400)
                 return
