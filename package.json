@@ -1,0 +1,19 @@
+{
+  "name": "kakinada-city-bus-route-optimizer",
+  "version": "1.0.0",
+  "description": "APSRTC Kakinada City Transit Management & Bus Route Optimizer",
+  "main": "server.py",
+  "scripts": {
+    "dev": "python server.py",
+    "start": "python server.py"
+  },
+  "keywords": [
+    "transport",
+    "kakinada",
+    "apsrtc",
+    "route-optimizer",
+    "transit"
+  ],
+  "author": "APSRTC Kakinada Transit Systems",
+  "license": "ISC"
+}

@@ -1,0 +1,167 @@
+/* APSRTC Kakinada Transit & Route Optimizer - Custom Style Extensions */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleUp {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scaleUp {
+    animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.admin-nav-item.active {
+    background-color: #e11d48 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px -2px rgba(225, 29, 72, 0.35);
+}
+
+/* Custom Toast Container */
+#toast-container {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    pointer-events: none;
+    max-width: 90vw;
+}
+
+.toast-item {
+    pointer-events: auto;
+    min-width: 300px;
+    max-width: 440px;
+    padding: 0.875rem 1.25rem;
+    border-radius: 1rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.toast-item.success {
+    background: #064e3b;
+    color: #a7f3d0;
+    border: 1px solid #059669;
+}
+
+.toast-item.error {
+    background: #881337;
+    color: #fecdd3;
+    border: 1px solid #e11d48;
+}
+
+.toast-item.info {
+    background: #0f172a;
+    color: #cbd5e1;
+    border: 1px solid #334155;
+}
+
+.toast-item.warning {
+    background: #78350f;
+    color: #fde68a;
+    border: 1px solid #d97706;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Smooth Table Row Transitions */
+tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+/* Star Rating Interactive Component */
+.star-rating i {
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+.star-rating i:hover {
+    transform: scale(1.2);
+}
+
+/* Accordion Transitions */
+.accordion-content {
+    transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+.accordion-btn .accordion-chevron {
+    transition: transform 0.2s ease;
+}
+.accordion-btn.expanded .accordion-chevron {
+    transform: rotate(180deg);
+}
+
+/* Subject Tab Active State */
+.subject-nav-btn.active {
+    background: #e11d48;
+    color: #ffffff;
+    box-shadow: 0 4px 14px -2px rgba(225, 29, 72, 0.4);
+}
+
+/* Timeline Flow Connectors */
+.timeline-step {
+    position: relative;
+}
+.timeline-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 1.25rem;
+    top: 2.75rem;
+    bottom: -1rem;
+    width: 2px;
+    background: #e2e8f0;
+}
+

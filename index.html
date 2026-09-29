@@ -1,0 +1,2219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APSRTC Kakinada City Transit & Route Optimizer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-rose-600 selection:text-white min-h-screen flex flex-col">
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container"></div>
+
+    <!-- Confirmation Modal Dialog -->
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-scaleUp mx-4">
+            <div class="flex items-center space-x-3 text-rose-600 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 id="confirm-title" class="text-lg font-bold text-slate-900">Confirm Action</h3>
+            </div>
+            <p id="confirm-msg" class="text-sm text-slate-600 mb-6">Are you sure you want to proceed with this operation?</p>
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeConfirmModal(false)" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">Cancel</button>
+                <button id="confirm-ok-btn" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 transition shadow">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Header Navigation -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-lg border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchView('public')">
+                <div class="bg-rose-600 p-2.5 rounded-xl text-white shadow-md flex items-center justify-center">
+                    <i class="fa-solid fa-bus text-xl"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="font-extrabold text-lg tracking-wide text-white">APSRTC <span class="text-rose-400 font-light">Kakinada</span></h1>
+                        <span class="text-[10px] bg-rose-950 text-rose-300 font-bold px-2 py-0.5 rounded border border-rose-800">DEPOT 1 & 2</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">City Transit & Route Optimizer</p>
+                </div>
+            </div>
+
+            <!-- Public Navigation Links -->
+            <nav class="hidden lg:flex items-center space-x-1 text-xs font-semibold text-slate-300">
+                <button onclick="switchView('public'); window.scrollTo({top:0, behavior:'smooth'});" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-house text-slate-400 mr-1"></i> Home
+                </button>
+                <button onclick="switchView('public'); scrollToSection('public-routes-section');" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-route text-slate-400 mr-1"></i> Routes
+                </button>
+                <button onclick="switchView('public'); switchPublicSearchTab('route'); scrollToSection('passenger-search-center');" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 mr-1"></i> Bus Search
+                </button>
+                <button onclick="switchView('public'); switchPublicSearchTab('stop'); scrollToSection('passenger-search-center');" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-clock text-slate-400 mr-1"></i> Timings
+                </button>
+                <button onclick="switchView('public'); scrollToSection('how-project-was-made-section');" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                    <i class="fa-solid fa-graduation-cap text-rose-400 mr-1"></i> How Project Was Made
+                </button>
+                <button onclick="switchView('public'); scrollToSection('public-remarks-section');" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                    <i class="fa-solid fa-comment-dots text-amber-400 mr-1"></i> Remarks
+                </button>
+                <button onclick="scrollToSection('app-footer');" class="px-2.5 py-1.5 rounded-lg hover:text-white hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-circle-info text-slate-400 mr-1"></i> About
+                </button>
+            </nav>
+
+            <div class="flex items-center space-x-2.5">
+                <!-- Alerts Pill Indicator -->
+                <div id="header-alerts-pill" onclick="switchView('public'); scrollToAlerts();" class="cursor-pointer hidden sm:flex items-center space-x-2 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs px-3 py-1.5 rounded-full hover:bg-amber-500/20 transition">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="header-alerts-text">2 Active Alerts</span>
+                </div>
+
+                <button onclick="switchView('public')" id="nav-public-btn" class="px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-rose-600 text-white transition shadow flex items-center space-x-1.5">
+                    <i class="fa-solid fa-earth-americas"></i>
+                    <span>Public</span>
+                </button>
+
+                <!-- Admin Action Button (Switches between Login and Dashboard) -->
+                <div id="nav-auth-container">
+                    <button onclick="openLoginModal()" id="nav-admin-login-btn" class="px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-slate-800 text-slate-200 border border-slate-700 transition hover:bg-slate-700 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-lock text-rose-400"></i>
+                        <span>Admin</span>
+                    </button>
+                    <div id="nav-admin-logged-group" class="hidden flex items-center space-x-2">
+                        <button onclick="switchView('admin')" id="nav-admin-dash-btn" class="px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-slate-800 text-rose-300 border border-slate-700 hover:bg-slate-700 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span class="hidden md:inline">Dashboard</span>
+                        </button>
+                        <button onclick="handleLogout()" class="px-3 py-2 text-xs font-semibold rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition">
+                            <i class="fa-solid fa-power-off"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- ============================================================== -->
+        <!-- ================= 1. PUBLIC TRANSIT PORTAL =================== -->
+        <!-- ============================================================== -->
+        <div id="view-public" class="space-y-8 animate-fadeIn">
+
+            <!-- Hero Section with Verified Tag -->
+            <div class="relative rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950 text-white p-6 sm:p-10 overflow-hidden shadow-2xl border border-slate-800">
+                <div class="absolute right-0 bottom-0 translate-x-12 translate-y-12 opacity-10 pointer-events-none">
+                    <i class="fa-solid fa-bus text-[240px]"></i>
+                </div>
+                <div class="max-w-3xl relative z-10 space-y-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="bg-rose-500/20 text-rose-300 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/40 flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-check text-rose-400"></i> Verified APSRTC Kakinada Services
+                        </span>
+                        <span class="bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30">
+                            Depot Active 2026 Timetable
+                        </span>
+                    </div>
+                    <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+                        Smart City Transit & <span class="text-rose-400">Route Optimizer</span>
+                    </h2>
+                    <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+                        Find verified APSRTC city bus routes across <strong>APSRTC Complex, JNTUK, Bhanugudi, Kakinada Port, Samalkot</strong> and surrounding suburban corridors. View official schedules, exact distances, frequency headway, and passenger occupancy indicators.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Operational Obstacles & Service Alerts Banner (Section 14) -->
+            <div id="public-alerts-section" class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                        <span>Active Transit & Operational Alerts</span>
+                    </h3>
+                    <span class="text-xs text-slate-500 font-medium">Published by Kakinada Depot Authorities</span>
+                </div>
+                <div id="public-alerts-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Passenger Search Center (Tabs for Route Search & Bus Stop Search) -->
+            <div id="passenger-search-center" class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                <!-- Search Mode Navigation Tabs -->
+                <div class="flex border-b border-slate-200 gap-2 pb-3 overflow-x-auto">
+                    <button onclick="switchPublicSearchTab('route')" id="search-tab-route" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-rose-600 text-white shadow-sm flex items-center gap-2 transition">
+                        <i class="fa-solid fa-route"></i>
+                        <span>Find Bus Route & Exact Distance</span>
+                    </button>
+                    <button onclick="switchPublicSearchTab('stop')" id="search-tab-stop" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <span>Search by Bus Stop & Timings</span>
+                    </button>
+                    <button onclick="switchPublicSearchTab('route-no')" id="search-tab-route-no" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-2 transition">
+                        <i class="fa-solid fa-bus-simple"></i>
+                        <span>Browse by Route Code</span>
+                    </button>
+                </div>
+
+                <!-- TAB 1: Route Search (Origin -> Destination) -->
+                <div id="pane-search-route" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                <i class="fa-solid fa-location-dot text-rose-600 mr-1"></i> Starting Bus Stop (Origin)
+                            </label>
+                            <select id="search-from" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none transition">
+                                <option value="">Select origin stop...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                <i class="fa-solid fa-flag-checkered text-emerald-600 mr-1"></i> Destination Stop
+                            </label>
+                            <select id="search-to" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none transition">
+                                <option value="">Select destination stop...</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="handleRouteSearch()" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl transition shadow-md flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <span>Search Direct Routes</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search Results Output -->
+                    <div id="search-results-container" class="hidden pt-4 space-y-4">
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <h4 class="text-lg font-bold text-slate-900">Journey Details & Direct Services</h4>
+                            <span class="text-xs text-slate-500">Haversine Geographical Calculation</span>
+                        </div>
+                        <div id="route-cards-list" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Bus Stop Search & Timings (Section 8 & 9) -->
+                <div id="pane-search-stop" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                <i class="fa-solid fa-map-pin text-rose-600 mr-1"></i> Select or Search Any Kakinada Bus Stop
+                            </label>
+                            <select id="public-stop-selector" onchange="handleStopDetailsSearch()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none transition">
+                                <option value="">Select bus stop to view all timings...</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="handleStopDetailsSearch()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition shadow flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-clock"></i>
+                                <span>Fetch Timetable & Occupancy</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stop Details Box -->
+                    <div id="stop-details-container" class="hidden space-y-6 pt-2">
+                        <!-- Stop Header Card -->
+                        <div class="bg-gradient-to-r from-slate-900 to-rose-950 text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <div class="flex items-center space-x-2 mb-1">
+                                    <span id="disp-stop-code" class="bg-rose-600 text-white text-xs font-bold px-2.5 py-0.5 rounded">STP-01</span>
+                                    <span id="disp-stop-status" class="bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-2 py-0.5 rounded border border-emerald-500/30">Normal Operation</span>
+                                </div>
+                                <h3 id="disp-stop-name" class="text-2xl font-black">APSRTC Complex</h3>
+                                <p id="disp-stop-desc" class="text-xs text-slate-300 mt-1">Main Central Bus Station, Kakinada</p>
+                            </div>
+                            <div class="text-left md:text-right">
+                                <span class="text-xs text-slate-400 block uppercase font-semibold">Coordinates</span>
+                                <span id="disp-stop-coords" class="font-mono text-sm text-rose-300">16.9382° N, 82.2415° E</span>
+                            </div>
+                        </div>
+
+                        <!-- Stop Service Alerts (if any) -->
+                        <div id="stop-specific-alert" class="hidden"></div>
+
+                        <!-- Available Routes & Timetable Passing Through This Stop -->
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-rose-600"></i>
+                                <span>Scheduled Bus Services at this Stop</span>
+                            </h4>
+                            <div id="stop-routes-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Browse by Route Number -->
+                <div id="pane-search-route-no" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                            <i class="fa-solid fa-hashtag text-rose-600 mr-1"></i> Select Route Number / Service ID
+                        </label>
+                        <select id="public-route-code-select" onchange="renderRouteCodeDetails()" class="w-full md:w-96 bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none transition">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div id="route-code-detail-container" class="hidden pt-2"></div>
+                </div>
+            </div>
+
+            <!-- Bus Occupancy System & Live Passenger Crowd Monitor (Section 10) -->
+            <div id="passenger-search-center" class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-slate-900 flex items-center">
+                                <i class="fa-solid fa-users text-rose-600 mr-2"></i> Live Bus Occupancy & Stop Demand Tracker
+                            </h3>
+                            <span class="bg-slate-100 text-slate-600 text-xs px-2.5 py-0.5 rounded-full font-semibold border border-slate-200">ETM Recorded</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Occupancy levels are calculated from ticket sales data & bus capacities (Free / Medium / Full).
+                        </p>
+                    </div>
+                    <div class="w-full md:w-72">
+                        <select id="live-crowd-stop-select" onchange="updateLiveCrowdMetric()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-medium">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Metric Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-slate-900 text-white p-6 rounded-2xl shadow flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Recorded Boarding Surge</span>
+                            <h4 id="live-passenger-count" class="text-3xl font-black text-rose-400 mt-1">--</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Aggregated ticket issuances</p>
+                        </div>
+                        <div class="bg-rose-600/20 text-rose-400 p-3.5 rounded-2xl text-2xl"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Stop Demand Density</span>
+                            <h4 id="live-crowd-status" class="text-xl font-extrabold text-slate-800 mt-1">--</h4>
+                            <span class="text-[11px] text-slate-500 mt-1 block">Station crowd condition</span>
+                        </div>
+                        <div class="bg-amber-100 text-amber-700 p-3.5 rounded-2xl text-xl"><i class="fa-solid fa-chart-pie"></i></div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Incoming Bus Occupancy</span>
+                            <h4 id="live-occupancy-pill" class="text-lg font-bold mt-1">--</h4>
+                            <p id="live-next-bus" class="text-xs text-emerald-600 font-bold mt-1">Next: --</p>
+                        </div>
+                        <div class="bg-emerald-100 text-emerald-700 p-3.5 rounded-2xl text-xl"><i class="fa-solid fa-bus-simple"></i></div>
+                    </div>
+                </div>
+
+                <!-- Occupancy Transparency Note -->
+                <div class="bg-blue-50/70 border border-blue-200 text-blue-900 p-4 rounded-xl text-xs space-y-1">
+                    <p class="font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-blue-600"></i> Transparency Notice on Occupancy Calculations
+                    </p>
+                    <p class="text-slate-600">
+                        Labels (<strong class="text-emerald-700">FREE: &lt;50%</strong>, <strong class="text-amber-700">MEDIUM: 50-85%</strong>, <strong class="text-rose-700">FULL: &gt;85%</strong>) are derived from depot ticket aggregations and fleet capacity records. Passengers alighting before terminal destinations may create seat availability.
+                    </p>
+                </div>
+            </div>
+
+            <!-- ADSA Network Graph Shortest Path Explorer (Educational Breadth-First Search) -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-network-wired text-rose-600"></i>
+                            <span>ADSA Network Graph & BFS Path Optimizer</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Educational Breadth-First Search graph traversal connecting all Kakinada transit nodes.</p>
+                    </div>
+                    <span class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full">Graph Theory (DMGT/ADSA)</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Start Node (Origin Stop)</label>
+                        <select id="public-bfs-start" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Target Node (Destination Stop)</label>
+                        <select id="public-bfs-target" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm"></select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="executeBFSPathfinding()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition shadow flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-diagram-project"></i>
+                            <span>Compute Shortest Path</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- BFS Result Terminal Box -->
+                <div id="public-bfs-output" class="hidden bg-slate-950 text-slate-100 p-5 rounded-2xl space-y-3 font-mono text-xs shadow-inner">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span class="text-rose-400 font-bold"><i class="fa-solid fa-terminal mr-2"></i> BFS Algorithmic Execution Result</span>
+                        <span id="public-bfs-badge" class="bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded text-[11px] font-semibold"></span>
+                    </div>
+                    <div id="public-bfs-details" class="space-y-1 text-slate-300"></div>
+                </div>
+            </div>
+
+            <!-- City Statistics Summary Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3">
+                    <div class="bg-rose-50 text-rose-600 p-3 rounded-xl text-lg"><i class="fa-solid fa-map-pin"></i></div>
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase">Total Stops</p>
+                        <h4 id="stat-stops-count" class="text-xl font-black text-slate-900">18</h4>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3">
+                    <div class="bg-blue-50 text-blue-600 p-3 rounded-xl text-lg"><i class="fa-solid fa-route"></i></div>
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase">Active Routes</p>
+                        <h4 id="stat-routes-count" class="text-xl font-black text-slate-900">7</h4>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3">
+                    <div class="bg-emerald-50 text-emerald-600 p-3 rounded-xl text-lg"><i class="fa-solid fa-bus"></i></div>
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase">Fleet Buses</p>
+                        <h4 id="stat-buses-count" class="text-xl font-black text-slate-900">7</h4>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-3">
+                    <div class="bg-amber-50 text-amber-600 p-3 rounded-xl text-lg"><i class="fa-solid fa-stopwatch"></i></div>
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase">Avg Headway</p>
+                        <h4 class="text-xl font-black text-slate-900">10-15m</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+            <!-- ============================================================== -->
+            <!-- ================= PUBLIC SECTION 2: ROUTES DIRECTORY ========= -->
+            <!-- ============================================================== -->
+            <div id="public-routes-section" class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-5">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-rose-50 text-rose-600 p-2 rounded-xl text-sm font-bold">
+                                <i class="fa-solid fa-route"></i>
+                            </span>
+                            <h3 class="text-xl font-bold text-slate-900">APSRTC Kakinada City Routes Directory</h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Official verified transit corridors operating across Kakinada, Samalkot, JNTUK, and coastal zones.</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <div class="relative flex-1 md:w-64">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                            <input type="text" id="public-routes-filter-input" oninput="filterPublicRoutesTable()" placeholder="Filter routes, stops..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-slate-100">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5">Route ID</th>
+                                <th class="p-3.5">Route Name</th>
+                                <th class="p-3.5">Origin → Destination</th>
+                                <th class="p-3.5">Sequential Stops</th>
+                                <th class="p-3.5">Frequency</th>
+                                <th class="p-3.5">Status</th>
+                                <th class="p-3.5 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="public-routes-tbody" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- ================= PUBLIC SECTION 3: PASSENGER REMARKS ======== -->
+            <!-- ============================================================== -->
+            <div id="public-remarks-section" class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                <div class="border-b border-slate-100 pb-5">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-50 text-amber-600 p-2.5 rounded-xl text-base font-bold">
+                            <i class="fa-solid fa-comment-dots"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-900">Passenger Remarks & Public Feedback Portal</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Voice your commute observations, delays, overcrowding, stop conditions, or staff feedback directly to depot authorities.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inline Submission Alert -->
+                <div id="public-remark-success-box" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl text-xs flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+                        <div>
+                            <strong class="font-bold block">Remark Submitted Successfully!</strong>
+                            <span id="public-remark-success-msg">Your feedback has been logged to the depot ledger and queued for superintendent review.</span>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('public-remark-success-box').classList.add('hidden')" class="text-emerald-600 hover:text-emerald-800 text-sm"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    <!-- Form Area -->
+                    <form onsubmit="handlePublicRemarkSubmit(event)" id="public-remark-form" class="lg:col-span-7 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Passenger Name <span class="text-slate-400 font-normal">(Optional)</span></label>
+                                <input type="text" id="remark-form-name" placeholder="e.g. Ramesh Kumar" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Email or Mobile Number <span class="text-slate-400 font-normal">(Optional)</span></label>
+                                <input type="text" id="remark-form-contact" placeholder="e.g. 9876543210 or name@mail.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Select Bus Route <span class="text-rose-500">*</span></label>
+                                <select id="remark-form-route" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                                    <option value="">-- Choose Route --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Bus Number <span class="text-slate-400 font-normal">(Optional)</span></label>
+                                <input type="text" id="remark-form-bus" placeholder="e.g. AP-05-Z-1022" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Bus Stop Location <span class="text-rose-500">*</span></label>
+                                <select id="remark-form-stop" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                                    <option value="">-- Choose Stop --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Remark Category <span class="text-rose-500">*</span></label>
+                                <select id="remark-form-type" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                                    <option value="Bus Delay">Bus Delay</option>
+                                    <option value="Bus Overcrowding">Bus Overcrowding</option>
+                                    <option value="Bus Stop Issue">Bus Stop Issue</option>
+                                    <option value="Bus Cleanliness">Bus Cleanliness</option>
+                                    <option value="Driver/Staff Feedback">Driver/Staff Feedback</option>
+                                    <option value="Route Issue">Route Issue</option>
+                                    <option value="Missing Bus">Missing Bus</option>
+                                    <option value="Timing Issue">Timing Issue</option>
+                                    <option value="General Suggestion">General Suggestion</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Commuter Experience Rating (1 - 5 Stars)</label>
+                            <div class="flex items-center space-x-2" id="remark-star-picker">
+                                <button type="button" onclick="setRemarkRating(1)" class="star-btn text-amber-400 text-lg hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setRemarkRating(2)" class="star-btn text-amber-400 text-lg hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setRemarkRating(3)" class="star-btn text-amber-400 text-lg hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setRemarkRating(4)" class="star-btn text-amber-400 text-lg hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setRemarkRating(5)" class="star-btn text-amber-400 text-lg hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <span id="remark-rating-label" class="text-xs font-bold text-slate-600 ml-2">5 Stars (Excellent)</span>
+                                <input type="hidden" id="remark-form-rating" value="5">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Message / Detailed Remark <span class="text-rose-500">*</span></label>
+                            <textarea id="remark-form-msg" rows="3" required placeholder="Please describe the timing problem, overcrowding at specific stop, cleanliness, or guidance needed..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none"></textarea>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <span class="text-[11px] text-slate-400"><i class="fa-solid fa-shield-halved text-emerald-500 mr-1"></i> Data handled in accordance with APSRTC Public Charter</span>
+                            <button type="submit" id="btn-submit-remark" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs transition shadow flex items-center gap-2">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Submit Remark</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Feed Area -->
+                    <div class="lg:col-span-5 bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                            <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-clipboard-check text-rose-600"></i> Recent Verified Passenger Remarks
+                            </h4>
+                            <span class="text-[11px] bg-white text-slate-600 px-2 py-0.5 rounded-md border font-semibold">Depot Triage</span>
+                        </div>
+                        <div id="public-recent-remarks-list" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- ====== PUBLIC SECTION 4: HOW THIS PROJECT WAS MADE =========== -->
+            <!-- ============================================================== -->
+            <div id="how-project-was-made-section" class="bg-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl border border-slate-800 space-y-10">
+                <!-- Header -->
+                <div class="space-y-3 max-w-4xl">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-rose-500/20 text-rose-300 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/40">
+                            Academic Presentation & Project Defense
+                        </span>
+                        <span class="bg-indigo-500/20 text-indigo-300 text-xs font-semibold px-3 py-1 rounded-full border border-indigo-500/40">
+                            Engineering Curriculum Synthesis
+                        </span>
+                    </div>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight">
+                        How This Project Was Made <span class="text-rose-400">— Core Concepts & System Architecture</span>
+                    </h2>
+                    <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                        This system was engineered to solve a real-world municipal problem: <em>"City transport corporations often lack structured route-stop-trip and passenger data to properly plan bus frequency."</em> Below is a comprehensive breakdown of the computer science subjects, algorithmic foundations, database design, and software development methodologies implemented in this project.
+                    </p>
+                </div>
+
+                <!-- 6 Interactive Subject Cards Grid -->
+                <div>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-rose-400"></i>
+                            <span>Core Engineering Subjects Used in This Project (Click any card to explore)</span>
+                        </h3>
+                        <span class="text-[11px] text-slate-400 font-mono">6 Modules</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <!-- Card 1: DBMS -->
+                        <div onclick="openSubjectModal('DBMS')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-rose-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-rose-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-database"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 font-mono font-black text-xs border border-rose-500/30">DBMS</span>
+                                <span class="text-slate-400 group-hover:text-rose-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Database Management System</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Relational modeling, ER diagrams, foreign key constraints, 1-to-many relationships, ACID queries, and CRUD transaction integrity.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-rose-400 group-hover:underline gap-1">
+                                Click to explore DBMS concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 2: DMGT -->
+                        <div onclick="openSubjectModal('DMGT')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-blue-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-blue-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-diagram-project"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-mono font-black text-xs border border-blue-500/30">DMGT</span>
+                                <span class="text-slate-400 group-hover:text-blue-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Discrete Mathematics & Graph Theory</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Graph formalization: Stop = Vertex (V), Road connection = Edge (E), directed multi-route connectivity, and adjacency representations.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-blue-400 group-hover:underline gap-1">
+                                Click to explore DMGT concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 3: ADSA -->
+                        <div onclick="openSubjectModal('ADSA')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-emerald-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-emerald-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-network-wired"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono font-black text-xs border border-emerald-500/30">ADSA</span>
+                                <span class="text-slate-400 group-hover:text-emerald-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Advanced Data Structures & Algorithms</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Breadth-First Search (BFS) level-by-level route traversal, FIFO queues, shortest-hop exploration, and O(V + E) search complexity.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-emerald-400 group-hover:underline gap-1">
+                                Click to explore ADSA concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 4: OOP -->
+                        <div onclick="openSubjectModal('OOP')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-purple-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-purple-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-cubes"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-purple-500/20 text-purple-400 font-mono font-black text-xs border border-purple-500/30">OOP</span>
+                                <span class="text-slate-400 group-hover:text-purple-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Object Oriented Programming</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Object modeling: Real-world entities mapped to software objects (Route, Bus, Stop, Trip, Passenger) with encapsulation and modular methods.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-purple-400 group-hover:underline gap-1">
+                                Click to explore OOP concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 5: PYTHON -->
+                        <div onclick="openSubjectModal('PYTHON')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-amber-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-amber-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-brands fa-python"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-mono font-black text-xs border border-amber-500/30">PYTHON</span>
+                                <span class="text-slate-400 group-hover:text-amber-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Python (Analytics & Architecture)</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">REST backend service, relational data aggregation, SQLite3 connection pooling, and predictive extra bus requirement calculation.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-amber-400 group-hover:underline gap-1">
+                                Click to explore Python concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+
+                        <!-- Card 6: WEB DEVELOPMENT -->
+                        <div onclick="openSubjectModal('WEB_DEV')" class="group cursor-pointer bg-slate-800/80 hover:bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-cyan-500/50 transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden">
+                            <div class="absolute -right-4 -bottom-4 text-slate-700/30 group-hover:text-cyan-500/10 transition text-6xl pointer-events-none">
+                                <i class="fa-solid fa-code"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono font-black text-xs border border-cyan-500/30">WEB DEV</span>
+                                <span class="text-slate-400 group-hover:text-cyan-400 transition text-xs"><i class="fa-solid fa-arrow-right"></i></span>
+                            </div>
+                            <h4 class="font-bold text-white text-base mb-1">Web Development & REST API</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-4">Semantic HTML5, responsive Tailwind styling, Vanilla JS state controller, asynchronous HTTP fetch, and session-based authentication.</p>
+                            <span class="inline-flex items-center text-xs font-semibold text-cyan-400 group-hover:underline gap-1">
+                                Click to explore Web Dev concepts <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9-Step Project Development Process -->
+                <div class="space-y-4 pt-6 border-t border-slate-800">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-timeline text-rose-400"></i>
+                            <span>Project Development Process (Step-by-Step Lifecycle)</span>
+                        </h3>
+                        <span class="text-xs text-slate-400">9 Phases</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
+                            <span class="font-mono text-rose-400 font-black">STEP 1</span>
+                            <h5 class="font-bold text-white">Problem Identification</h5>
+                            <p class="text-slate-400 text-[11px]">Identified lack of structured municipal transit data across Kakinada corridors causing irregular bus frequencies and commuter overcrowding.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
+                            <span class="font-mono text-rose-400 font-black">STEP 2</span>
+                            <h5 class="font-bold text-white">Requirement Analysis</h5>
+                            <p class="text-slate-400 text-[11px]">Segregated roles into Public Commuters (search, view, remarks) and Depot Administrators (routes, fleet assignments, demand analysis).</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
+                            <span class="font-mono text-rose-400 font-black">STEP 3</span>
+                            <h5 class="font-bold text-white">System Design</h5>
+                            <p class="text-slate-400 text-[11px]">Architected dual-portal client-server architecture with REST endpoints, reactive UI state updates, and modular styling components.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
+                            <span class="font-mono text-rose-400 font-black">STEP 4</span>
+                            <h5 class="font-bold text-white">Database Design</h5>
+                            <p class="text-slate-400 text-[11px]">Normalized relational schema (3NF) encompassing Routes, Stops, Fleet Buses, Timetables, Ticket Sales, Occupancies, and Remarks.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
+                            <span class="font-mono text-rose-400 font-black">STEP 5</span>
+                            <h5 class="font-bold text-white">Frontend Development</h5>
+                            <p class="text-slate-400 text-[11px]">Constructed responsive accessible views, dynamic modals, real-time KPI aggregators, and interactive route-builder forms.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
+                            <span class="font-mono text-rose-400 font-black">STEP 6</span>
+                            <h5 class="font-bold text-white">Backend Development</h5>
+                            <p class="text-slate-400 text-[11px]">Engineered lightweight Python HTTP REST service providing JSON CRUD, session validation, and static asset delivery without external server bloat.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
+                            <span class="font-mono text-rose-400 font-black">STEP 7</span>
+                            <h5 class="font-bold text-white">Algorithm Implementation</h5>
+                            <p class="text-slate-400 text-[11px]">Coded BFS graph pathfinder for transfer routing and statistical regression models for route capacity & headway estimation.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
+                            <span class="font-mono text-rose-400 font-black">STEP 8</span>
+                            <h5 class="font-bold text-white">Rigorous Testing</h5>
+                            <p class="text-slate-400 text-[11px]">Validated route CRUD, duplicate ID checks, multi-stop timing persistence, bus additions/removals, feedback workflows, and session persistence.</p>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/70 space-y-1.5">
+                            <span class="font-mono text-rose-400 font-black">STEP 9</span>
+                            <h5 class="font-bold text-white">Deployment & Operation</h5>
+                            <p class="text-slate-400 text-[11px]">Configured unified local deployment running under Python standard library with npm lifecycle compatibility.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Architecture Diagram -->
+                <div class="space-y-4 pt-6 border-t border-slate-800">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sitemap text-rose-400"></i>
+                        <span>System Architecture Diagram</span>
+                    </h3>
+                    <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto leading-relaxed">
+                        <pre class="text-slate-200">
++----------------------------------------------------------------------------------------------------+
+|                                    PUBLIC COMMUTER (NO LOGIN)                                      |
++----------------------------------------------------------------------------------------------------+
+                                                  │
+                                                  ▼
++────────────────────────────────────────────────────────────────────────────────────────────────────+
+|                                        PUBLIC WEB PORTAL                                           |
+|  • Route Search & Headway  • Stop Timetables  • BFS Graph Pathfinding  • Public Passenger Remarks  |
++────────────────────────────────────────────────────────────────────────────────────────────────────+
+                                                  │
+                                                  ▼ REST APIs (JSON over HTTP)
++────────────────────────────────────────────────────────────────────────────────────────────────────+
+|                                    BACKEND / REST DATA ENGINE                                      |
+|                                       (server.py & db.py)                                          |
+|                                                                                                    |
+|   ├── GET  /api/routes                ├── GET/POST /api/feedback (Public Remarks)                  |
+|   ├── GET  /api/stops                 ├── POST/PUT /api/routes   (Admin Protected)                 |
+|   ├── GET  /api/buses                 ├── POST/PUT /api/buses    (Admin Protected)                 |
+|   ├── GET  /api/timings               ├── GET      /api/route-conditions (Dynamic Extra Bus Model) |
+|   └── GET  /api/overview              └── GET/POST /api/algorithms/bfs (Graph Traversal Engine)    |
++────────────────────────────────────────────────────────────────────────────────────────────────────+
+                                                  │
+                                                  ▼ ACID SQLite3 Relational Engine
++────────────────────────────────────────────────────────────────────────────────────────────────────+
+|                                   DATABASE LAYER (transit.db)                                      |
+|                                                                                                    |
+|   • bus_routes (PK: id, route_number, origin, dest, distance_km, travel_time_mins, required_buses) |
+|   • bus_stops  (PK: id, code, name, latitude, longitude, status)                                   |
+|   • route_stops(FK: route_id, stop_id, stop_sequence, arrival_time, departure_time)                |
+|   • buses      (PK: id, bus_number, type, capacity, occupancy, status, driver, conductor, route_id)|
+|   • timetables (FK: route_id, bus_id, trip_identifier, departure_time, arrival_time)               |
+|   • feedback   (PK: id, passenger_name, contact_info, route_id, bus_number, remark, rating, status)|
++────────────────────────────────────────────────────────────────────────────────────────────────────+
+                                                  ▲
+                                                  │ Secure Session Authorization
++────────────────────────────────────────────────────────────────────────────────────────────────────+
+|                                  ADMIN COMMAND PORTAL (PROTECTED)                                  |
+|  • Dashboard (8 Dynamic KPIs)  • Route Registry (Add/Edit)  • Bus Management (Assign/Remove Buses) |
+|  • Bus Stops Management        • Ticket Demand & Revenue    • Public Remarks Triage Board          |
+|  • Route Condition & Extra Bus Analysis Table (Dynamic GREEN / RED Operational Status Indicators)  |
++────────────────────────────────────────────────────────────────────────────────────────────────────+
+                        </pre>
+                    </div>
+                </div>
+
+                <!-- Practical Use of the Project (12 Points) -->
+                <div class="space-y-4 pt-6 border-t border-slate-800">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-rose-400"></i>
+                        <span>Practical & Social Use of the Project (12 Real-World Operational Applications)</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-300">
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">1</span>
+                            <span><strong>Rapid Route Discovery:</strong> Helps daily commuters instantly find direct and connecting bus routes across Kakinada.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">2</span>
+                            <span><strong>Accurate Stop Timings:</strong> Provides reliable scheduled departure and arrival hours for intermediate stops.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">3</span>
+                            <span><strong>Operational Route Planning:</strong> Empowers depot controllers to organize origin, destination, and intermediate stops with exact sequence and times.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">4</span>
+                            <span><strong>Fleet Availability Monitoring:</strong> Tracks active buses, maintenance vehicles, and reserve capacity per depot.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">5</span>
+                            <span><strong>Overcrowding Identification:</strong> Automatically highlights routes operating at or exceeding 90% seating capacity.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">6</span>
+                            <span><strong>Passenger Demand Analytics:</strong> Aggregates electronic ticketing data to identify peak boarding hotspots.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">7</span>
+                            <span><strong>Dynamic Bus Allocation:</strong> Allows administrators to add or remove bus assignments as ridership surges shift across corridors.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">8</span>
+                            <span><strong>Public Citizen Feedback:</strong> Collects structured passenger remarks regarding cleanliness, delays, and stop issues for prompt depot resolution.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">9</span>
+                            <span><strong>Structured Transport Database:</strong> Replaces disparate paper spreadsheets with a relational ACID-compliant database.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">10</span>
+                            <span><strong>Future Extension — Live GPS:</strong> Designed with clean modular interfaces ready to integrate GTFS real-time vehicle locator streams.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">11</span>
+                            <span><strong>Future Extension — Smart Ticketing:</strong> Ready to ingest contactless QR/NFC ticketing logs for real-time origin-destination fare calculation.</span>
+                        </div>
+                        <div class="bg-slate-800/40 p-3.5 rounded-xl border border-slate-700/60 flex items-start gap-2.5">
+                            <span class="w-5 h-5 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0">12</span>
+                            <span><strong>Future Extension — AI Demand Forecasting:</strong> Pre-structured for full neural/regression models utilizing weather and holiday event datasets.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Summary -->
+                <div class="bg-slate-800/60 p-5 rounded-2xl border border-slate-700/80 space-y-2">
+                    <h4 class="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-flag-checkered text-rose-400"></i> Project Summary
+                    </h4>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        This project combines <strong>database management systems (DBMS)</strong>, <strong>discrete mathematics & graph theory (DMGT)</strong>, <strong>advanced data structures and algorithms (ADSA)</strong>, <strong>object-oriented programming (OOP)</strong>, <strong>Python data analytics</strong>, and <strong>modern web engineering</strong> to deliver an end-to-end municipal transit management and route optimization platform. By structuring route topologies, intermediate stoppages, passenger ticket sales, and bus fleet assignments into an operational feedback loop, the system empowers transport authorities to make data-driven decisions that alleviate urban congestion and optimize headway frequency.
+                    </p>
+                </div>
+            </div>
+
+
+        <!-- ============================================================== -->
+        <!-- ================= 2. ADMIN DASHBOARD VIEW ==================== -->
+        <!-- ============================================================== -->
+        <div id="view-admin" class="hidden space-y-6 animate-fadeIn">
+            
+            <!-- Admin Top Welcome & In-Charge Bar -->
+            <div class="bg-slate-900 text-white p-6 rounded-3xl shadow-lg border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-3 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Authenticated Session Active
+                        </span>
+                        <span id="admin-badge-role" class="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded font-semibold">Administrator</span>
+                    </div>
+                    <h2 class="text-2xl font-black">APSRTC Kakinada Depot Command Center</h2>
+                    <p class="text-xs text-slate-400">Configure city routes, bus stops, timetables, ticket demand, occupancy, and service alerts.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <div class="text-right hidden sm:block">
+                        <span id="admin-user-display" class="text-sm font-bold text-white block">admin (Depot Manager)</span>
+                        <span id="admin-session-time" class="text-xs text-slate-400">Session: Verified</span>
+                    </div>
+                    <button onclick="handleLogout()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow flex items-center space-x-1.5">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Sub-Navigation (12 Sections in prompt) -->
+            <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex overflow-x-auto space-x-1.5 scrollbar-thin">
+                <button onclick="switchAdminSection('overview')" id="adm-nav-overview" class="admin-nav-item active px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span>
+                </button>
+                <button onclick="switchAdminSection('routes')" id="adm-nav-routes" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-route"></i> <span>Routes</span>
+                </button>
+                <button onclick="switchAdminSection('bus-mgmt')" id="adm-nav-bus-mgmt" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-bus"></i> <span>Bus Management</span>
+                </button>
+                <button onclick="switchAdminSection('stops')" id="adm-nav-stops" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-location-dot"></i> <span>Stops</span>
+                </button>
+                <button onclick="switchAdminSection('timings')" id="adm-nav-timings" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-clock"></i> <span>Trips</span>
+                </button>
+                <button onclick="switchAdminSection('tickets')" id="adm-nav-tickets" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-users"></i> <span>Passenger Data</span>
+                </button>
+                <button onclick="switchAdminSection('revenue')" id="adm-nav-revenue" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-indian-rupee-sign"></i> <span>Revenue</span>
+                </button>
+                <button onclick="switchAdminSection('remarks')" id="adm-nav-remarks" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-comments"></i> <span>Public Remarks</span>
+                </button>
+                <button onclick="switchAdminSection('route-condition')" id="adm-nav-route-condition" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-traffic-light"></i> <span>Route Condition</span>
+                </button>
+                <button onclick="switchAdminSection('project-info')" id="adm-nav-project-info" class="admin-nav-item px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-circle-info"></i> <span>Project Information</span>
+                </button>
+                <button onclick="handleLogout()" class="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition flex items-center gap-1.5 whitespace-nowrap ml-auto">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span>Logout</span>
+                </button>
+            </div>
+
+            <!-- SECTION A: DASHBOARD OVERVIEW -->
+            <div id="admin-sec-overview" class="admin-section space-y-6">
+                <!-- Summary KPI Cards (Section 4) -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Routes</span>
+                        <h4 id="kpi-routes" class="text-3xl font-black text-slate-900 mt-1">--</h4>
+                        <span class="text-[11px] text-rose-600 font-semibold mt-1 block">Active Network</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Buses</span>
+                        <h4 id="kpi-buses" class="text-3xl font-black text-slate-900 mt-1">--</h4>
+                        <span class="text-[11px] text-blue-600 font-semibold mt-1 block">Depot Fleet</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Stops</span>
+                        <h4 id="kpi-stops" class="text-3xl font-black text-slate-900 mt-1">--</h4>
+                        <span class="text-[11px] text-emerald-600 font-semibold mt-1 block">Verified Points</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Passengers</span>
+                        <h4 id="kpi-passengers" class="text-3xl font-black text-purple-600 mt-1">--</h4>
+                        <span class="text-[11px] text-purple-700 font-semibold mt-1 block">Commuters Served</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Tickets</span>
+                        <h4 id="kpi-tickets" class="text-3xl font-black text-indigo-600 mt-1">--</h4>
+                        <span class="text-[11px] text-indigo-700 font-semibold mt-1 block">ETM Transactions</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Revenue</span>
+                        <h4 id="kpi-revenue" class="text-3xl font-black text-emerald-600 mt-1">--</h4>
+                        <span class="text-[11px] text-emerald-700 font-semibold mt-1 block">INR Collected</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Routes Requiring Additional Bus</span>
+                        <h4 id="kpi-extra-buses" class="text-3xl font-black text-amber-600 mt-1">--</h4>
+                        <span class="text-[11px] text-amber-700 font-semibold mt-1 block">Overloaded Corridors</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Public Remarks</span>
+                        <h4 id="kpi-remarks" class="text-3xl font-black text-rose-600 mt-1">--</h4>
+                        <span class="text-[11px] text-rose-700 font-semibold mt-1 block">Passenger Feedback</span>
+                    </div>
+                </div>
+
+                <!-- High Demand Stops & High Occupancy Buses Tables -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- High Demand Bus Stops -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <h4 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-fire text-rose-600"></i> High-Demand Bus Stops (Boarding Volume)
+                            </h4>
+                            <span class="text-xs text-slate-400">By ETM tickets</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-slate-400 uppercase border-b">
+                                        <th class="py-2">Stop Name</th>
+                                        <th class="py-2 text-center">Transactions</th>
+                                        <th class="py-2 text-right">Passengers</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="overview-high-demand-stops" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Buses With High Occupancy -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <h4 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Buses / Trips with High Occupancy
+                            </h4>
+                            <span class="text-xs text-slate-400">&gt;85% Load</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-slate-400 uppercase border-b">
+                                        <th class="py-2">Route</th>
+                                        <th class="py-2">Trip</th>
+                                        <th class="py-2">Bus #</th>
+                                        <th class="py-2 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="overview-high-occupancy-buses" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ridership by Route Chart / Visualizer -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-rose-600"></i>
+                        <span>Passenger Demand Distribution by Kakinada Route</span>
+                    </h4>
+                    <div id="overview-ridership-bars" class="space-y-3"></div>
+                </div>
+            
+                <!-- Route Condition & Extra Bus Requirement Live Analysis -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                                <i class="fa-solid fa-traffic-light text-rose-600"></i>
+                                <span>Route Condition & Extra Bus Requirement Analysis</span>
+                            </h4>
+                            <p class="text-xs text-slate-500">Live operational condition monitoring based on passenger ridership, seat capacity, and headway load factor.</p>
+                        </div>
+                        <button onclick="renderRouteConditionTable()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh Analysis
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-slate-100">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3">Route ID</th>
+                                    <th class="p-3">Route Corridor</th>
+                                    <th class="p-3">Assigned Buses</th>
+                                    <th class="p-3">Fleet Capacity</th>
+                                    <th class="p-3">Ridership Demand</th>
+                                    <th class="p-3">Occupancy %</th>
+                                    <th class="p-3">Depot Condition</th>
+                                    <th class="p-3 text-right">Requirement Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-route-condition-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION B: MANAGE BUS ROUTES -->
+            <div id="admin-sec-routes" class="admin-section hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Bus Route Registry (DBMS)</h3>
+                        <p class="text-xs text-slate-500">Manage origin, destination, sequential intermediate stops, and operational frequencies.</p>
+                    </div>
+                    <button onclick="openRouteModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-plus"></i> Add New Route
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3">Route ID</th>
+                                    <th class="p-3">Route Name</th>
+                                    <th class="p-3">Origin → Destination</th>
+                                    <th class="p-3">Intermediate Stops</th>
+                                    <th class="p-3">Headway / Frequency</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-routes-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION C: MANAGE BUS STOPS -->
+            <div id="admin-sec-stops" class="admin-section hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Bus Stops Management</h3>
+                        <p class="text-xs text-slate-500">View and update Kakinada stop coordinates, operational condition, and associations.</p>
+                    </div>
+                    <button onclick="openStopModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-plus"></i> Add New Stop
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3">Stop Code</th>
+                                    <th class="p-3">Stop Name</th>
+                                    <th class="p-3">Location Description</th>
+                                    <th class="p-3">Coordinates (Lat, Lon)</th>
+                                    <th class="p-3">Operational Condition</th>
+                                    <th class="p-3">Active</th>
+                                    <th class="p-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-stops-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION D: MANAGE BUS TIMINGS -->
+            <div id="admin-sec-timings" class="admin-section hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Scheduled Bus Timings & Timetables</h3>
+                        <p class="text-xs text-slate-500">Publish verified departure and arrival timings for official passenger view.</p>
+                    </div>
+                    <button onclick="openTimetableModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-plus"></i> Schedule New Trip
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3">Route</th>
+                                    <th class="p-3">Trip ID</th>
+                                    <th class="p-3">Assigned Bus</th>
+                                    <th class="p-3">Departure Time</th>
+                                    <th class="p-3">Arrival Time</th>
+                                    <th class="p-3">Operating Days</th>
+                                    <th class="p-3">Verification</th>
+                                    <th class="p-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-timings-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION E: MANAGE BUSES (FLEET) -->
+            <div id="admin-sec-buses" class="admin-section hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Bus Fleet Registry</h3>
+                        <p class="text-xs text-slate-500">Manage vehicle registration numbers, seat capacity, bus type, and route assignments.</p>
+                    </div>
+                    <button onclick="openBusModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-plus"></i> Register Bus
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3">Bus Registration</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Seating Capacity</th>
+                                    <th class="p-3">Assigned Route</th>
+                                    <th class="p-3">Operational Status</th>
+                                    <th class="p-3">Notes</th>
+                                    <th class="p-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-buses-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION F: PASSENGER TICKET DATA -->
+            <div id="admin-sec-tickets" class="admin-section hidden space-y-4">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm gap-4">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Passenger Ticket & Demand Ledger</h3>
+                        <p class="text-xs text-slate-500">Aggregated electronic ticketing device (ETM) sales and station logs.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openRecordTicketModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> Log Ticket Sales
+                        </button>
+                        <button onclick="exportCSV('tickets')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white p-4 rounded-2xl border border-slate-200">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Filter by Route</label>
+                        <select id="filter-ticket-route" onchange="loadAdminTickets()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+                            <option value="">All Routes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Filter by Boarding Stop</label>
+                        <select id="filter-ticket-stop" onchange="loadAdminTickets()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+                            <option value="">All Stops</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="loadAdminTickets()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition">
+                            Apply Filters
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3">Ticket ID</th>
+                                    <th class="p-3">Route</th>
+                                    <th class="p-3">Trip ID</th>
+                                    <th class="p-3">Boarding Stop</th>
+                                    <th class="p-3">Destination</th>
+                                    <th class="p-3 text-center">Tickets Sold</th>
+                                    <th class="p-3">Fare (INR)</th>
+                                    <th class="p-3">Timestamp</th>
+                                    <th class="p-3">Source</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-tickets-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION G: BUS OCCUPANCY SYSTEM -->
+            <div id="admin-sec-occupancy" class="admin-section hidden space-y-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <h3 class="font-bold text-slate-900 text-lg">Bus Occupancy Status & Threshold Management</h3>
+                    <p class="text-xs text-slate-500">
+                        Thresholds: <strong>FREE (&lt;50%)</strong> | <strong>MEDIUM (50% - 85%)</strong> | <strong>FULL (&gt;85%)</strong>. Administrators can manually verify or override indicators based on depot inspections.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3">Route</th>
+                                    <th class="p-3">Trip</th>
+                                    <th class="p-3">Bus Number</th>
+                                    <th class="p-3">Tickets / Capacity</th>
+                                    <th class="p-3">Occupancy Ratio</th>
+                                    <th class="p-3">Indicator</th>
+                                    <th class="p-3">Source / Last Updated</th>
+                                    <th class="p-3 text-right">Manual Override</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-occupancy-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION H: FREQUENCY ANALYSIS & OPTIMIZER -->
+            <div id="admin-sec-frequency" class="admin-section hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-bold text-slate-900 text-lg">
+                            <i class="fa-solid fa-chart-line text-rose-600 mr-1.5"></i> Bus Frequency Optimizer & Demand Regression
+                        </h3>
+                        <span class="bg-rose-50 text-rose-700 text-xs font-bold px-2.5 py-0.5 rounded">Python ADSA/AI</span>
+                    </div>
+                    <p class="text-xs text-slate-500">
+                        Compute optimal dispatch headway using linear ridership models accounting for peak congestion multipliers, fleet limits, and seat capacities.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h4 class="font-bold text-sm text-slate-800 border-b pb-2">Analysis Parameters</h4>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Target Kakinada Route</label>
+                            <select id="opt-route-select" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Daily Average Boardings</label>
+                            <input type="number" id="opt-boardings" value="3800" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Peak Congestion Factor</label>
+                            <input type="number" step="0.1" id="opt-congestion" value="1.7" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Bus Seating Capacity</label>
+                                <input type="number" id="opt-capacity" value="50" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Assigned Fleet Available</label>
+                                <input type="number" id="opt-fleet" value="6" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                        <button onclick="calculateFrequencyOptimization()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition text-sm shadow">
+                            Run Frequency Regression
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-950 text-white p-6 rounded-2xl flex flex-col justify-between shadow-xl">
+                        <div>
+                            <span class="bg-rose-500/20 text-rose-300 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30">Decision Support Model</span>
+                            <h4 class="text-xl font-extrabold mt-3">Recommended Timetable Adjustment</h4>
+                            <p class="text-slate-400 text-xs mt-1">Computed recommendations must be reviewed prior to publication.</p>
+                        </div>
+
+                        <div class="my-6 space-y-3">
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <span class="text-slate-400 text-xs">Estimated Peak Volume:</span>
+                                <span id="out-peak-load" class="font-black text-xl text-white">--</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <span class="text-slate-400 text-xs">Recommended Headway:</span>
+                                <span id="out-rec-freq" class="font-black text-2xl text-emerald-400">--</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <span class="text-slate-400 text-xs">Depot Trips Needed / Hr:</span>
+                                <span id="out-trips-needed" class="font-bold text-lg text-white">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400 text-xs">Fleet Balance:</span>
+                                <span id="out-fleet-balance" class="font-bold text-sm text-amber-400">--</span>
+                            </div>
+                        </div>
+
+                        <div id="out-recommendation-box" class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 text-xs text-slate-300 mb-4">
+                            Run analysis to generate operational notes.
+                        </div>
+
+                        <button onclick="showToast('Optimization suggestion recorded into planning drafts.', 'success')" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow">
+                            Save Suggestion to Planning Log
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION I: ROUTE CONFLICT & OPERATIONAL ALERTS -->
+            <div id="admin-sec-alerts" class="admin-section hidden space-y-4">
+                <div class="flex justify-between items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-lg">Operational Obstacles & Service Alerts</h3>
+                        <p class="text-xs text-slate-500">Record road construction, delays, breakdowns, stop relocations, and publish to passengers.</p>
+                    </div>
+                    <button onclick="openAlertModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-plus"></i> Issue New Alert
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3">Alert Title</th>
+                                    <th class="p-3">Type</th>
+                                    <th class="p-3">Severity</th>
+                                    <th class="p-3">Affected Routes / Stops</th>
+                                    <th class="p-3">Valid Dates</th>
+                                    <th class="p-3">Published Status</th>
+                                    <th class="p-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-alerts-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION J: REPORTS & CSV HUB -->
+            <div id="admin-sec-reports" class="admin-section hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <h3 class="font-bold text-slate-900 text-lg">Transit Data Hub & Reports</h3>
+                    <p class="text-xs text-slate-500">Import official timetables or export operational records into CSV spreadsheets.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Export Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-file-export text-rose-600"></i> Export Official Datasets
+                        </h4>
+                        <p class="text-xs text-slate-500">Download formatted CSV reports compatible with Excel.</p>
+                        <div class="space-y-2">
+                            <button onclick="exportCSV('routes')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-between">
+                                <span><i class="fa-solid fa-route mr-2"></i> Export Bus Routes & Stops Path</span>
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                            <button onclick="exportCSV('tickets')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-between">
+                                <span><i class="fa-solid fa-ticket mr-2"></i> Export Passenger Ticket Ledger</span>
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Import Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-file-import text-blue-600"></i> Import Bus Stops via CSV
+                        </h4>
+                        <p class="text-xs text-slate-500">Paste CSV rows formatted as: <code>Code, Name, Description, Latitude, Longitude</code></p>
+                        <textarea id="csv-import-area" rows="4" placeholder="STP-19, Jagannaickpur Bridge, Canal Crossing, 16.9530, 82.2380" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono"></textarea>
+                        <button onclick="handleCSVImport()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition">
+                            <i class="fa-solid fa-upload mr-1.5"></i> Validate & Import Stops into Database
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION K: ADMIN PROFILE & AUDIT LOGS -->
+            <div id="admin-sec-profile" class="admin-section hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Profile Card -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-2">
+                                <i class="fa-solid fa-user-shield"></i>
+                            </div>
+                            <h4 id="profile-fullname" class="font-black text-slate-900 text-lg">APSRTC Depot In-Charge</h4>
+                            <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full">Authorized Administrator</span>
+                        </div>
+                        <div class="space-y-2 text-xs border-t pt-3">
+                            <div class="flex justify-between"><span class="text-slate-400">Username:</span><strong id="profile-username" class="text-slate-800">admin</strong></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Official Email:</span><strong id="profile-email" class="text-slate-800">admin@apsrtc.gov.in</strong></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Security:</span><span class="text-emerald-600 font-bold">PBKDF2-HMAC-SHA256</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Audit Log Table -->
+                    <div class="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <h4 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-clipboard-list text-rose-600"></i> Administrative Audit Trail
+                            </h4>
+                            <span class="text-xs text-slate-400">Security & Operational Logs</span>
+                        </div>
+                        <div class="overflow-x-auto max-h-64">
+                            <table class="w-full text-left text-xs">
+                                <thead class="text-slate-400 uppercase border-b">
+                                    <tr>
+                                        <th class="py-2">User</th>
+                                        <th class="py-2">Action</th>
+                                        <th class="py-2">Details</th>
+                                        <th class="py-2 text-right">Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-audit-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: BUS MANAGEMENT (Assigned Buses per Route, Add Bus, Remove Bus) -->
+            <div id="admin-sec-bus-mgmt" class="admin-section hidden space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-rose-50 text-rose-600 p-2 rounded-xl text-sm font-bold">
+                                <i class="fa-solid fa-bus-simple"></i>
+                            </span>
+                            <h3 class="font-bold text-slate-900 text-lg">Bus Fleet & Route Assignment Management</h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Allocate active buses to specific Kakinada corridors, track driver/conductor assignments, and remove buses on shift completion.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openBusModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> + Add / Register Bus
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Route Assignment Cards -->
+                <div id="bus-mgmt-routes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- SECTION: PUBLIC REMARKS (Triage Board) -->
+            <div id="admin-sec-remarks" class="admin-section hidden space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-amber-50 text-amber-600 p-2 rounded-xl text-sm font-bold">
+                                <i class="fa-solid fa-comments"></i>
+                            </span>
+                            <h3 class="font-bold text-slate-900 text-lg">Passenger Remarks & Public Feedback Triage</h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Review commuter submissions, inspect ratings, investigate reported delays or stop issues, and update resolution status.</p>
+                    </div>
+                    <button onclick="loadAdminRemarks()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrows-rotate"></i> Refresh Feedback
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3.5">ID</th>
+                                    <th class="p-3.5">Passenger</th>
+                                    <th class="p-3.5">Contact</th>
+                                    <th class="p-3.5">Route</th>
+                                    <th class="p-3.5">Bus #</th>
+                                    <th class="p-3.5">Stop</th>
+                                    <th class="p-3.5">Category</th>
+                                    <th class="p-3.5">Rating</th>
+                                    <th class="p-3.5">Remark Message</th>
+                                    <th class="p-3.5">Status</th>
+                                    <th class="p-3.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-remarks-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: ROUTE CONDITION DEDICATED VIEW -->
+            <div id="admin-sec-route-condition" class="admin-section hidden space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-rose-50 text-rose-600 p-2 rounded-xl text-sm font-bold">
+                                <i class="fa-solid fa-traffic-light"></i>
+                            </span>
+                            <h3 class="font-bold text-slate-900 text-lg">Route Condition & Fleet Headway Status</h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Real-time capacity calculations comparing peak passenger boarding versus allocated bus seats.</p>
+                    </div>
+                    <button onclick="renderRouteConditionTable()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrows-rotate"></i> Re-Calculate Condition
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3.5">Route ID</th>
+                                    <th class="p-3.5">Route Corridor</th>
+                                    <th class="p-3.5">Assigned Buses</th>
+                                    <th class="p-3.5">Fleet Capacity</th>
+                                    <th class="p-3.5">Ridership Demand</th>
+                                    <th class="p-3.5">Occupancy %</th>
+                                    <th class="p-3.5">Depot Condition</th>
+                                    <th class="p-3.5 text-right">Requirement Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-route-condition-dedicated-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: REVENUE SUMMARY -->
+            <div id="admin-sec-revenue" class="admin-section hidden space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 rounded-2xl border border-slate-200 shadow-sm gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-emerald-50 text-emerald-600 p-2 rounded-xl text-sm font-bold">
+                                <i class="fa-solid fa-indian-rupee-sign"></i>
+                            </span>
+                            <h3 class="font-bold text-slate-900 text-lg">Fare Revenue & ETM Collection Ledger</h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Aggregated ticket sales across all active routes and conductor ticketing terminals.</p>
+                    </div>
+                    <button onclick="exportCSV('tickets')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> Export Revenue CSV
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Gross Ticket Revenue</span>
+                        <h4 id="revenue-sec-total" class="text-3xl font-black text-emerald-600 mt-1">₹0</h4>
+                        <span class="text-[11px] text-slate-500 mt-1 block">Total fare collection</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Tickets Sold</span>
+                        <h4 id="revenue-sec-tickets" class="text-3xl font-black text-slate-900 mt-1">0</h4>
+                        <span class="text-[11px] text-slate-500 mt-1 block">ETM receipts issued</span>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Avg Fare per Commuter</span>
+                        <h4 id="revenue-sec-avg" class="text-3xl font-black text-rose-600 mt-1">₹15.00</h4>
+                        <span class="text-[11px] text-slate-500 mt-1 block">Standard municipal tariff</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                        <h4 class="font-bold text-slate-900 text-sm">Revenue Breakdown by Route Corridor</h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b">
+                                <tr>
+                                    <th class="p-3.5">Route Number</th>
+                                    <th class="p-3.5">Route Name</th>
+                                    <th class="p-3.5">Tickets Sold</th>
+                                    <th class="p-3.5">Passengers</th>
+                                    <th class="p-3.5 text-right">Total Revenue (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="revenue-by-route-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION: PROJECT INFORMATION & PRESENTATION -->
+            <div id="admin-sec-project-info" class="admin-section hidden space-y-6">
+                <div class="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 space-y-4">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-rose-500/20 text-rose-400 text-xs font-bold px-3 py-1 rounded-full border border-rose-500/30">Depot System Docs</span>
+                    </div>
+                    <h3 class="text-2xl font-black">Kakinada City Transit & Route Optimizer Architecture</h3>
+                    <p class="text-xs text-slate-300 leading-relaxed max-w-3xl">
+                        Designed as a comprehensive solution for municipal transport planning. Integrates Relational DBMS (SQLite3), Graph Theory (DMGT), Breadth-First Search (ADSA), Object-Oriented Modeling (OOP), and Python REST web services to eliminate commuter overcrowding and streamline bus headway management.
+                    </p>
+                    <div class="pt-2 flex flex-wrap gap-3">
+                        <button onclick="switchView('public'); scrollToSection('how-project-was-made-section');" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5">
+                            <i class="fa-solid fa-graduation-cap"></i> View Full 6-Subject Presentation
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-bus text-rose-500"></i>
+                <span class="font-bold text-white">APSRTC Kakinada City Transit Corporation</span>
+                <span>— Route Optimizer & Operational System</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span>DBMS (SQLite3)</span>
+                <span>•</span>
+                <span>ADSA Graph BFS</span>
+                <span>•</span>
+                <span>Python Regression</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============================================================== -->
+    <!-- ================= MODALS & POPUPS ============================ -->
+    <!-- ============================================================== -->
+
+    <!-- SECURE ADMIN LOGIN MODAL (Section 2) -->
+    <div id="login-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl border border-slate-200 relative animate-scaleUp mx-4">
+            <button onclick="closeLoginModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="bg-rose-50 text-rose-600 w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl shadow-sm">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3 class="text-2xl font-black text-slate-900">Administrator Portal</h3>
+                <p class="text-xs text-slate-500 mt-1">Authorized APSRTC Staff Login with Encrypted Credentials</p>
+            </div>
+
+            <!-- Login Error Alert -->
+            <div id="login-error-msg" class="hidden bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span id="login-error-text">Invalid username or password.</span>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Email or Username</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="login-username" required placeholder="admin or admin@apsrtc.gov.in" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600">Password</label>
+                        <button type="button" onclick="togglePasswordVisibility()" class="text-xs text-rose-600 hover:text-rose-700 font-semibold flex items-center gap-1">
+                            <i id="toggle-pwd-icon" class="fa-solid fa-eye text-xs"></i>
+                            <span id="toggle-pwd-text">Show</span>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <i class="fa-solid fa-key absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="password" id="login-password" required placeholder="Enter password" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Demo helper -->
+                <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Default: <strong>admin</strong> / <strong>Admin@123</strong></span>
+                    <button type="button" onclick="fillDemoCredentials()" class="text-rose-600 font-bold hover:underline">Fill Demo</button>
+                </div>
+
+                <button type="submit" id="login-submit-btn" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition shadow text-sm flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Authenticate & Access Dashboard</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD / EDIT ROUTE MODAL -->
+    <div id="route-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-scaleUp mx-4 max-h-[92vh] overflow-y-auto">
+            <button onclick="closeRouteModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            
+            <div class="flex items-center gap-2 mb-2">
+                <span class="bg-rose-50 text-rose-600 p-2 rounded-xl text-sm font-bold">
+                    <i class="fa-solid fa-route"></i>
+                </span>
+                <h3 id="route-modal-title" class="text-xl font-bold text-slate-900">Add New Bus Route</h3>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Configure route identifiers, corridor endpoints, distance, travel time, and intermediate sequential stops with arrival/departure timings.</p>
+
+            <!-- Duplicate Route Alert / Error Box -->
+            <div id="route-form-error" class="hidden bg-rose-50 border border-rose-200 text-rose-800 p-3 rounded-xl text-xs mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+                <span id="route-form-error-msg">A route with this Route ID already exists. Please choose a unique Route ID.</span>
+            </div>
+
+            <form onsubmit="handleSaveRoute(event)" class="space-y-4">
+                <input type="hidden" id="route-form-id">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Route Identifier / ID <span class="text-rose-500">*</span></label>
+                        <input type="text" id="route-form-number" required placeholder="e.g. KKD-08" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs font-bold focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                        <span class="text-[10px] text-slate-400">Must be unique (e.g. KKD-01 to KKD-99)</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Route Name <span class="text-rose-500">*</span></label>
+                        <input type="text" id="route-form-name" required placeholder="e.g. Port - Samalkot Express" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Starting Stop (Origin) <span class="text-rose-500">*</span></label>
+                        <select id="route-form-orig" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Destination Stop <span class="text-rose-500">*</span></label>
+                        <select id="route-form-dest" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Distance (km)</label>
+                        <input type="number" step="0.1" id="route-form-dist" value="12.0" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Travel Time (mins)</label>
+                        <input type="number" id="route-form-time" value="35" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Required Buses</label>
+                        <input type="number" id="route-form-buses-req" value="2" min="1" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                        <select id="route-form-status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Start Time</label>
+                        <input type="text" id="route-form-start-time" value="06:00 AM" placeholder="06:00 AM" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">End Time</label>
+                        <input type="text" id="route-form-end-time" value="09:30 PM" placeholder="09:30 PM" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Headway / Frequency</label>
+                        <input type="text" id="route-form-freq" value="Every 15 mins" placeholder="Every 15 mins" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Sequential Stops Builder -->
+                <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-list-ol text-rose-600"></i> Sequential Intermediate Stops Builder
+                            </h4>
+                            <p class="text-[11px] text-slate-500">Add intermediate stops in the exact travel order with optional arrival and departure timings.</p>
+                        </div>
+                        <button type="button" onclick="addRouteStopRow()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-3 py-1.5 rounded-xl text-xs transition border border-rose-200 flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> + Add Stop
+                        </button>
+                    </div>
+
+                    <div id="route-stops-builder-container" class="space-y-2 max-h-52 overflow-y-auto pr-1">
+                        <!-- Populated with dynamic stop rows via JS -->
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeRouteModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">Cancel</button>
+                    <button type="submit" id="btn-save-route-submit" class="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Route
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD / EDIT STOP MODAL -->
+    <div id="stop-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-scaleUp mx-4">
+            <button onclick="closeStopModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 id="stop-modal-title" class="text-xl font-bold text-slate-900 mb-4">Add New Bus Stop</h3>
+            <form onsubmit="handleSaveStop(event)" class="space-y-3">
+                <input type="hidden" id="stop-form-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Stop Code</label>
+                    <input type="text" id="stop-form-code" required placeholder="STP-19" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Stop Name</label>
+                    <input type="text" id="stop-form-name" required placeholder="Jagannaickpur Bridge" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Location Description</label>
+                    <input type="text" id="stop-form-desc" placeholder="Connecting Old Town and Port Corridor" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Latitude</label>
+                        <input type="number" step="0.0001" id="stop-form-lat" value="16.9400" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Longitude</label>
+                        <input type="number" step="0.0001" id="stop-form-lon" value="82.2400" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Operational Condition</label>
+                    <select id="stop-form-status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                        <option value="Normal">Normal Operation</option>
+                        <option value="Under Maintenance">Under Maintenance</option>
+                        <option value="Temporarily Relocated">Temporarily Relocated</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3">
+                    <button type="button" onclick="closeStopModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow">Save Stop</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD TIMETABLE MODAL -->
+    <div id="timetable-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-scaleUp mx-4">
+            <button onclick="closeTimetableModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-xl font-bold text-slate-900 mb-4">Schedule Bus Departure</h3>
+            <form onsubmit="handleSaveTimetable(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Select Route</label>
+                    <select id="time-form-route" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Trip Identifier (e.g. TRIP-108)</label>
+                    <input type="text" id="time-form-trip" required placeholder="TRIP-108" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Departure Time</label>
+                        <input type="text" id="time-form-dep" required placeholder="08:15 AM" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Arrival Time</label>
+                        <input type="text" id="time-form-arr" required placeholder="08:55 AM" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Assign Fleet Bus (Optional)</label>
+                    <select id="time-form-bus" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm"></select>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3">
+                    <button type="button" onclick="closeTimetableModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow">Save Timetable</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD BUS MODAL -->
+    <div id="bus-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-scaleUp mx-4 max-h-[92vh] overflow-y-auto">
+            <button onclick="closeBusModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="flex items-center gap-2 mb-2">
+                <span class="bg-rose-50 text-rose-600 p-2 rounded-xl text-sm font-bold">
+                    <i class="fa-solid fa-bus"></i>
+                </span>
+                <h3 id="bus-modal-title" class="text-xl font-bold text-slate-900">Register / Assign Fleet Bus</h3>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Register new depot vehicle, assign driver/conductor crew, and designate route service corridor.</p>
+
+            <form onsubmit="handleSaveBus(event)" class="space-y-3.5">
+                <input type="hidden" id="bus-form-id">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Bus Number / Registration <span class="text-rose-500">*</span></label>
+                        <input type="text" id="bus-form-number" required placeholder="e.g. AP-05-Z-1088" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Bus Type</label>
+                        <select id="bus-form-type" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                            <option value="City Ordinary">City Ordinary (Standard)</option>
+                            <option value="Metro Express">Metro Express (Limited Stop)</option>
+                            <option value="Palle Velugu">Palle Velugu (Suburban)</option>
+                            <option value="Super Luxury">Super Luxury</option>
+                            <option value="AC City Liner">AC City Liner</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Assign Route</label>
+                        <select id="bus-form-route" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                            <option value="">-- No Route Assigned (Reserve Pool) --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Operational Status</label>
+                        <select id="bus-form-status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                            <option value="Active">Active / On Duty</option>
+                            <option value="In Depot">In Depot (Reserve)</option>
+                            <option value="Maintenance">Under Maintenance</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Total Seating Capacity</label>
+                        <input type="number" id="bus-form-capacity" value="50" min="10" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Current Occupancy (Pax)</label>
+                        <input type="number" id="bus-form-occupancy" value="30" min="0" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Driver Name / ID</label>
+                        <input type="text" id="bus-form-driver" placeholder="e.g. S. Venkatesh (DRV-102)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Conductor Name / ID</label>
+                        <input type="text" id="bus-form-conductor" placeholder="e.g. P. Satyanarayana (CND-44)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Scheduled Departure Time</label>
+                        <input type="text" id="bus-form-departure" placeholder="06:30 AM" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Scheduled Arrival Time</label>
+                        <input type="text" id="bus-form-arrival" placeholder="07:15 AM" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-rose-500/20 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeBusModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Bus
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- LOG TICKET SALES MODAL -->
+    <div id="ticket-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-scaleUp mx-4">
+            <button onclick="closeTicketModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="text-xl font-bold text-slate-900 mb-4">Record Passenger Ticket Sales</h3>
+            <form onsubmit="handleSaveTicket(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Route</label>
+                    <select id="ticket-form-route" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Trip Identifier</label>
+                    <input type="text" id="ticket-form-trip" value="TRIP-REG" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Boarding Stop</label>
+                        <select id="ticket-form-boarding" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Ticket Count</label>
+                        <input type="number" id="ticket-form-count" value="10" min="1" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3">
+                    <button type="button" onclick="closeTicketModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow">Record Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ISSUE SERVICE ALERT MODAL (Section 14) -->
+    <div id="alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-scaleUp mx-4">
+            <button onclick="closeAlertModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 id="alert-modal-title" class="text-xl font-bold text-slate-900 mb-4">Issue Operational Service Alert</h3>
+            <form onsubmit="handleSaveAlert(event)" class="space-y-3">
+                <input type="hidden" id="alert-form-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Alert Headline / Title</label>
+                    <input type="text" id="alert-form-title" required placeholder="e.g. Flyover Road Works near Bhanugudi" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Alert Category</label>
+                        <select id="alert-form-type" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                            <option value="Delay">Delay</option>
+                            <option value="Diversion">Traffic Diversion</option>
+                            <option value="Construction">Road Construction</option>
+                            <option value="Relocation">Stop Relocated</option>
+                            <option value="Advisory">General Advisory</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Severity</label>
+                        <select id="alert-form-severity" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                            <option value="Moderate">Moderate</option>
+                            <option value="High">High / Major Interruption</option>
+                            <option value="Low">Low / Advisory</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Affected Routes (e.g. KKD-01, KKD-02 or 'All')</label>
+                    <input type="text" id="alert-form-routes" placeholder="KKD-01, KKD-03" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Affected Stops</label>
+                    <input type="text" id="alert-form-stops" placeholder="Bhanugudi Junction, Main Road" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Detailed Description for Passengers</label>
+                    <textarea id="alert-form-desc" rows="3" required placeholder="Explain obstacle, expected delays, and alternative guidance..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Start Date</label>
+                        <input type="date" id="alert-form-sdate" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">End Date</label>
+                        <input type="date" id="alert-form-edate" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs">
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 pt-2">
+                    <input type="checkbox" id="alert-form-published" checked class="rounded text-rose-600">
+                    <label for="alert-form-published" class="text-xs font-semibold text-slate-700">Publish immediately to Public Bus Information System</label>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3">
+                    <button type="button" onclick="closeAlertModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow">Save Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+    <!-- SUBJECT DETAIL MODAL (DBMS, DMGT, ADSA, OOP, PYTHON, WEB_DEV) -->
+    <div id="subject-detail-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-3xl w-full p-6 sm:p-8 text-white shadow-2xl relative animate-scaleUp max-h-[92vh] overflow-y-auto">
+            <button onclick="closeSubjectModal()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            
+            <div class="flex items-center gap-3 mb-3">
+                <span id="sub-modal-badge" class="px-3 py-1 rounded-xl bg-rose-500/20 text-rose-400 font-mono font-black text-xs border border-rose-500/30">DBMS</span>
+                <span id="sub-modal-status" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">Implemented & Active</span>
+            </div>
+
+            <h3 id="sub-modal-title" class="text-2xl sm:text-3xl font-black mb-2 text-white">Database Management System</h3>
+            <p id="sub-modal-tagline" class="text-xs sm:text-sm text-slate-400 mb-6 leading-relaxed">Relational Schema, Foreign Key Constraints, and ACID Transactions</p>
+
+            <div class="space-y-6 text-xs sm:text-sm">
+                <!-- Section 1 -->
+                <div class="bg-slate-800/60 p-5 rounded-2xl border border-slate-700/80 space-y-2">
+                    <h4 class="font-bold text-white uppercase text-xs tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-book-open text-rose-400"></i> Subject Academic Definition & Theory
+                    </h4>
+                    <p id="sub-modal-theory" class="text-slate-300 leading-relaxed"></p>
+                </div>
+
+                <!-- Section 2 -->
+                <div class="bg-slate-800/60 p-5 rounded-2xl border border-slate-700/80 space-y-2">
+                    <h4 class="font-bold text-white uppercase text-xs tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-laptop-code text-rose-400"></i> Applied Real-World Concepts in This Project
+                    </h4>
+                    <ul id="sub-modal-concepts" class="list-disc list-inside space-y-1.5 text-slate-300"></ul>
+                </div>
+
+                <!-- Section 3 -->
+                <div class="bg-slate-800/60 p-5 rounded-2xl border border-slate-700/80 space-y-2">
+                    <h4 class="font-bold text-white uppercase text-xs tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-code-branch text-rose-400"></i> Technical Implementation & Code Structure
+                    </h4>
+                    <p id="sub-modal-implementation" class="text-slate-300 leading-relaxed font-mono text-xs bg-slate-950 p-4 rounded-xl border border-slate-800 whitespace-pre-wrap"></p>
+                </div>
+
+                <!-- Section 4 -->
+                <div class="bg-slate-800/60 p-5 rounded-2xl border border-slate-700/80 space-y-2">
+                    <h4 class="font-bold text-white uppercase text-xs tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-compass text-rose-400"></i> Implemented vs Possible Future Extensions
+                    </h4>
+                    <p id="sub-modal-extension" class="text-slate-300 leading-relaxed"></p>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-slate-800 flex justify-between items-center mt-6">
+                <span class="text-xs text-slate-400">Computer Science Curriculum Synthesis</span>
+                <button onclick="closeSubjectModal()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>← Back to Subjects</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript File (Properly Linked!) -->
+    <script src="script.js"></script>
+</body>
+</html>
